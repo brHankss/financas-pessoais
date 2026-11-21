@@ -113,8 +113,8 @@
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.35); border-radius: 9999px; }
   </style>
-  <link rel="stylesheet" href="/finance.css" />
-  <script src="/js/statement-reader.js"></script>
+  <link rel="stylesheet" href="/finance.css?v=cartoes-pdf-1" />
+  <script src="/js/statement-reader.js?v=cartoes-pdf-1"></script>
   <link rel="manifest" href="/manifest.json" />
   <script src="/js/api-sync.js"></script>
 </head>
@@ -634,7 +634,7 @@
             <div class="card rounded-2xl p-5 space-y-2"><h3 class="font-bold">Aplicações importadas</h3>
               <p class="text-sm text-zinc-500">Marque as aplicações que devem compor o patrimônio.</p><div id="pg-assets"></div><p id="pg-total" class="font-semibold"></p>
             </div>
-            <button type="button" class="bill-btn" data-view="cards">Importar fatura de cartão em PDF</button>
+            <button type="button" class="bill-btn" id="imports-read-statement">Importar fatura de cartão em PDF</button>
             <button type="button" class="bill-btn" data-view="settings">Cadastros manuais e ajustes</button>
           </section>
           <!-- VIEW: SETTINGS & PEOPLE -->
@@ -772,7 +772,11 @@
 
   <dialog id="statement-dialog" aria-labelledby="review-title">
     <h2 id="review-title">Revisar fatura</h2><p id="review-context"></p>
-    <p id="review-summary"></p><div id="review-rows"></div>
+    <p id="review-summary"></p>
+    <label id="review-owner" hidden>Nome do titular da fatura
+      <input id="review-owner-name" class="bill-field" maxlength="120" placeholder="Titular">
+    </label>
+    <div id="review-rows"></div>
     <p role="alert" id="review-error"></p>
     <div class="review-actions">
       <button type="button" class="bill-btn bill-primary" id="review-save">Confirmar importação</button>
@@ -994,7 +998,24 @@
       let integration = null;
       const imported = group => (integration?.positions || []).filter(p=>p.category===group);
       const includedRemote = () => imported('investments').filter(p=>!p.excluded);
-      const allCards = () => [...new Map([...state.cards,...imported('cards')].map(c=>[c.id,c])).values()];
+      function allCards() {
+        const cards = new Map(state.cards.map(card => [card.id, card]));
+        for (const card of imported('cards')) {
+          const saved = cards.get(card.id);
+          cards.set(card.id, saved ? {
+            ...saved, ...card,
+            name: saved.name || card.name,
+            institution: saved.institution === 'Manual' ? card.institution : saved.institution,
+            last4: hasCardNumber(card.last4) ? card.last4 : saved.last4,
+            brand: saved.brand || card.brand,
+            holderName: saved.holderName || card.holderName,
+            closeDay: cardDay(card.closeDay) || saved.closeDay,
+            dueDay: cardDay(card.dueDay) || saved.dueDay,
+            limit: card.limit ?? saved.limit,
+          } : card);
+        }
+        return [...cards.values()];
+      }
       const allAccounts = () => [...state.accounts,...imported('accounts')];
       const portfolio = () => [...state.investments,...includedRemote()];
       let currentView = 'dashboard';
@@ -1028,6 +1049,7 @@
       const getPerson = (id) => state.people.find((p) => p.id === id) || { id, name: 'Pessoa', role: '' };
       const getCard = (id) => allCards().find((c) => c.id === id) || { id, name: 'Cartão', last4: '0000' };
       const getAccount = (id) => allAccounts().find((a) => a.id === id) || { id, name: 'Conta' };
+      const cardDay = value => Number.isInteger(Number(value)) && Number(value) >= 1 && Number(value) <= 31 ? Number(value) : 0;
 
       function showToast(msg) {
         const el = document.getElementById('toast');
@@ -1204,7 +1226,8 @@
         const upcoming = [
           ...allCards().map((c) => {
             const bill = mRows.filter((r) => r.cardId === c.id).reduce((s, r) => s + r.fullCents, 0);
-            return { title: `Fatura ${c.name}`, sub: `Vence dia ${c.dueDay} · Final ${c.last4}`, val: fmtCents(bill), color: 'bg-blue-500' };
+            const sub = [cardDay(c.dueDay) && `Vence dia ${c.dueDay}`, `Final ${c.last4}`].filter(Boolean).join(' · ');
+            return { title: `Fatura ${c.name}`, sub, val: fmtCents(bill), color: 'bg-blue-500' };
           }),
           ...state.fixedIncomes.map((fi) => ({
             title: fi.title,
@@ -1356,15 +1379,19 @@
         document.getElementById('cards-selector').innerHTML = allCards().map((c) => {
           const bill = mRows.filter((r) => r.cardId === c.id).reduce((s, r) => s + r.fullCents, 0);
           const active = c.id === selectedCardId;
+          const identity = [c.brand, c.institution !== 'Manual' && c.institution, c.holderName,
+            c.limit > 0 && `Limite ${fmtBRL(c.limit)}`].filter(Boolean).join(' · ');
+          const dates = [cardDay(c.closeDay) && `Fecha dia ${c.closeDay}`, cardDay(c.dueDay) && `Vence dia ${c.dueDay}`].filter(Boolean).join(' · ');
           return `
             <button type="button" data-select-card="${esc(c.id)}" class="text-left p-4 rounded-2xl border transition ${active ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/10' : 'card hover:border-zinc-300 dark:hover:border-zinc-700'}">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-bold">${esc(c.name)}</span>
                 <span class="text-[10px] text-zinc-400">•••• ${esc(c.last4)}</span>
               </div>
+              ${identity ? `<p class="text-[11px] text-zinc-400 mt-0.5">${esc(identity)}</p>` : ''}
               <p class="text-lg font-extrabold mt-2 tabular-nums">${fmtCents(bill)}</p>
               ${c.bankBalance != null ? '<p class="text-xs">Saldo do cartão na Pluggy: ' + fmtBRL(c.bankBalance) + '</p>' : ''}
-              <p class="text-[11px] text-zinc-400 mt-0.5">Fecha dia ${c.closeDay} · Vence dia ${c.dueDay}</p>
+              ${dates ? `<p class="text-[11px] text-zinc-400 mt-0.5">${dates}</p>` : ''}
             </button>
           `;
         }).join('');
@@ -1915,100 +1942,312 @@
       const review = document.getElementById('statement-dialog');
       const pdfInput = document.getElementById('statement-file');
       const readButton = document.getElementById('read-statement');
+      const importsReadButton = document.getElementById('imports-read-statement');
       const pdfStatus = document.getElementById('pdf-status');
+      const reviewError = document.getElementById('review-error');
+      const ownerNameInput = document.getElementById('review-owner-name');
       let draft;
-      readButton.onclick = () => { if (!allCards().length || !state.people.length) { setView('settings'); showToast('Cadastre o cartão e o titular para importar a fatura.'); return; } pdfInput.value = ''; pdfInput.click(); };
+
+      function selectStatementFile() {
+        if (readButton.disabled) return;
+        setView('cards');
+        pdfInput.value = '';
+        pdfInput.click();
+      }
+
+      readButton.onclick = selectStatementFile;
+      importsReadButton.onclick = selectStatementFile;
       document.getElementById('review-cancel').onclick = () => review.close();
+      review.addEventListener('close', () => { draft = null; });
+
+      const hasCardNumber = value => /^\d{4}$/.test(value || '');
+      const nameKey = value => StatementReader.normalize(value || '');
+      const institutionKey = value => ['manual', 'meupluggy'].includes(nameKey(value)) ? '' : nameKey(value);
+      const productTier = name => (name || '').toLowerCase().match(/\b(classic|gold|platinum|signature|infinite|black|grafite|nanquim|ultravioleta)\b/)?.[0] || '';
+
+      function matchingStatementCards(source, cards) {
+        if (!hasCardNumber(source.last4)) return [];
+        const sourceFields = [institutionKey(source.institution), nameKey(source.brand), nameKey(source.holderName), productTier(source.name)];
+        const compatible = cards.filter(card => {
+          if (card.last4 !== source.last4) return false;
+          const fields = [institutionKey(card.institution), nameKey(card.brand), nameKey(card.holderName), productTier(card.name)];
+          return fields.every((value, i) => !value || !sourceFields[i] || value === sourceFields[i]);
+        });
+        if (compatible.length < 2 || !source.name) return compatible;
+        const sameName = compatible.filter(card => nameKey(card.name) === nameKey(source.name));
+        return sameName.length === 1 ? sameName : compatible;
+      }
+
+      function statementGroups(cards, rows) {
+        const groups = new Map(cards.map(card => [card.key, { card, rows: [] }]));
+        for (const row of rows) {
+          if (!groups.has(row.cardKey)) groups.set(row.cardKey, { card: {}, rows: [] });
+          groups.get(row.cardKey).rows.push(row);
+        }
+        return [...groups.values()].filter(group => group.rows.length || hasCardNumber(group.card.last4));
+      }
+
+      function defaultStatementPerson(group) {
+        const holder = nameKey(group.card.holderName);
+        const matches = holder ? state.people.filter(person => nameKey(person.name) === holder) : [];
+        return matches.length === 1 ? matches[0].id : state.people.find(person => person.isOwner)?.id || draft.owner?.id || '';
+      }
+
+      function updateStatementChoices(groupElement) {
+        const group = draft.groups[Number(groupElement.dataset.group)];
+        const destination = groupElement.querySelector('[data-card-target]').value;
+        const cardId = destination.startsWith('card:') ? destination.slice(5) : '';
+        groupElement.querySelector('[data-card-details]').hidden = destination !== 'new';
+
+        const existing = cardId ? getMonthInstallments(draft.month, true).filter(item => item.cardId === cardId) : [];
+        const used = new Set();
+        for (const [index, element] of [...groupElement.querySelectorAll('.review-row')].entries()) {
+          const row = group.rows[index];
+          const name = nameKey(row.description);
+          const candidates = existing.filter(item => item.installmentNumber === row.index && item.installmentsTotal === row.count &&
+            (nameKey(item.description) === name || Math.abs(item.fullCents - row.cents) <= 1 || item.date === row.date));
+          const sameName = candidates.filter(item => nameKey(item.description) === name &&
+            (row.count > 1 || item.date === row.date) && !used.has(item.purchaseId));
+          const near = sameName.filter(item => Math.abs(item.fullCents - row.cents) <= 1);
+          const exactDate = near.filter(item => item.date === row.date);
+          const matches = exactDate.length ? exactDate : near;
+          const best = matches.length === 1 ? matches[0] : null;
+          if (best) used.add(best.purchaseId);
+          const target = best?.purchaseId || (sameName.length ? '?' : 'new');
+          const person = target === 'new' ? defaultStatementPerson(group) : '';
+          element.querySelector('[data-target]').innerHTML =
+            (target === '?' ? '<option value="?">Conferir vínculo com compra existente</option>' : '') +
+            `<option value="new" ${target === 'new' ? 'selected' : ''}>Nova compra</option>` +
+            candidates.map(item => `<option value="${esc(item.purchaseId)}" ${target === item.purchaseId ? 'selected' : ''}>
+              ${item.confirmed ? 'Já conferida' : 'Conciliar'} · ${esc(item.description)} · ${fmtCents(item.fullCents)} · ${item.splits.map(split => esc(getPerson(split.personId).name)).join(', ')}
+            </option>`).join('');
+          element.querySelector('[data-person]').innerHTML =
+            '<option value="">Manter rateio da compra</option>' + personOptions(person) +
+            (draft.owner ? `<option value="${esc(draft.owner.id)}" data-pending-owner ${person === draft.owner.id ? 'selected' : ''}>${esc(ownerNameInput.value || 'Titular')}</option>` : '');
+        }
+      }
+
+      function renderStatementReview() {
+        const cards = allCards();
+        document.getElementById('review-owner').hidden = !draft.owner;
+        ownerNameInput.value = draft.owner?.name || '';
+        document.getElementById('review-rows').innerHTML = draft.groups.map(({ card, rows }, index) => {
+          const matches = matchingStatementCards(card, cards);
+          const destination = matches.length === 1 ? 'card:' + matches[0].id : matches.length > 1 || (!card.last4 && cards.length) ? '' : 'new';
+          const label = [card.name, card.last4 && `Final ${card.last4}`].filter(Boolean).join(' · ') || 'Cartão da fatura';
+          return `<fieldset class="review-card" data-group="${index}">
+            <legend>${esc(label)}</legend>
+            <label class="review-card-target">Cartão no app
+              <select class="bill-field" data-card-target>
+                <option value="" ${destination ? '' : 'selected'}>Escolher cartão</option>
+                <option value="new" ${destination === 'new' ? 'selected' : ''}>Cadastrar cartão</option>
+                ${cards.map(saved => `<option value="card:${esc(saved.id)}" ${destination === 'card:' + saved.id ? 'selected' : ''}>
+                  ${esc([saved.name, saved.institution !== 'Manual' && saved.institution, `final ${saved.last4}`].filter(Boolean).join(' · '))}
+                </option>`).join('')}
+              </select>
+            </label>
+            <div class="review-fields" data-card-details>
+              <label>Final do cartão<input class="bill-field" data-card-last4 inputmode="numeric" maxlength="4" value="${esc(card.last4)}"></label>
+              <label>Nome do cartão<input class="bill-field" data-card-name maxlength="120" value="${esc(card.name)}"></label>
+              <label>Emissor<input class="bill-field" data-card-institution maxlength="100" value="${esc(card.institution)}"></label>
+              <label>Bandeira<input class="bill-field" data-card-brand maxlength="60" value="${esc(card.brand)}"></label>
+              <label>Nome no cartão<input class="bill-field" data-card-holder maxlength="120" value="${esc(card.holderName)}"></label>
+              <label>Limite em reais<input class="bill-field" data-card-limit type="number" min="0" step="0.01" value="${card.limit ?? ''}"></label>
+              <label>Dia de fechamento<input class="bill-field" data-card-close type="number" min="1" max="31" value="${card.closeDay ?? ''}"></label>
+              <label>Dia de vencimento<input class="bill-field" data-card-due type="number" min="1" max="31" value="${card.dueDay ?? ''}"></label>
+            </div>
+            ${rows.length ? rows.map(row => `
+              <div class="review-row">
+                <label><input type="checkbox" data-include checked> ${esc(row.description)} · ${fmtCents(row.cents)}</label>
+                <small>${fmtDate(row.date)} · ${row.count === 1 ? 'À vista' : 'Parcela ' + row.index + '/' + row.count}</small>
+                <label>Lançamento<select class="bill-field" data-target></select></label>
+                <label>Responsável<select class="bill-field" data-person></select></label>
+              </div>`).join('') : '<label><input type="checkbox" data-include-card checked> Incluir cartão</label>'}
+          </fieldset>`;
+        }).join('');
+        review.querySelectorAll('.review-card').forEach(updateStatementChoices);
+      }
+
       pdfInput.onchange = async () => {
         const file = pdfInput.files[0];
         if (!file) return;
-        const cardId = selectedCardId;
-        const month = getMonth();
-        readButton.disabled = true;
+        readButton.disabled = importsReadButton.disabled = true;
         pdfStatus.textContent = 'Lendo as páginas do PDF…';
         try {
-          const {rows, skipped} = await StatementReader.read(file, month);
-          if (!rows.length) {
-            pdfStatus.textContent = 'Nenhuma compra reconhecida. Use um PDF com texto selecionável ou cadastre a compra manualmente.';
+          const fallbackMonth = getMonth();
+          const {rows, cards = [], skipped, month = fallbackMonth, holderName} = await StatementReader.read(file, fallbackMonth);
+          const groups = statementGroups(cards, rows);
+          if (!groups.length) {
+            pdfStatus.textContent = 'Nenhum cartão ou lançamento reconhecido. Selecione a fatura em PDF com texto selecionável.';
             return;
           }
-          const existing = getMonthInstallments(month, true).filter(r => r.cardId === cardId);
-          const used = new Set();
-          draft = {cardId, month, rows: rows.map(row => {
-            const name = StatementReader.normalize(row.description);
-            const candidates = existing.filter(r => r.installmentNumber === row.index && r.installmentsTotal === row.count &&
-              (StatementReader.normalize(r.description) === name || Math.abs(r.fullCents - row.cents) <= 1 || r.date === row.date));
-            const sameName = candidates.filter(r => StatementReader.normalize(r.description) === name &&
-              (row.count > 1 || r.date === row.date) && !used.has(r.purchaseId));
-            const near = sameName.filter(r => Math.abs(r.fullCents - row.cents) <= 1);
-            const exactDate = near.filter(r => r.date === row.date);
-            const matches = exactDate.length ? exactDate : near;
-            const best = matches.length === 1 ? matches[0] : null;
-            if (best) used.add(best.purchaseId);
-            return {...row, candidates, target: best?.purchaseId || (sameName.length ? '?' : 'new')};
-          })};
-          document.getElementById('review-context').textContent = getCard(cardId).name + ' · ' + monthLabel(month) + ' · ' + file.name;
-          document.getElementById('review-summary').textContent = rows.length + ' compra(s) para conferir. Compare com o PDF antes de confirmar.' + (skipped ? ' Linhas com data não importadas: ' + skipped + '.' : '');
-          document.getElementById('review-error').textContent = '';
-          const owner = state.people.find(p => p.isOwner)?.id;
-          document.getElementById('review-rows').innerHTML = draft.rows.map((r, i) => `
-            <div class="review-row" data-index="${i}">
-              <label><input type="checkbox" data-include checked> ${esc(r.description)} · ${fmtCents(r.cents)}</label>
-              <small>${fmtDate(r.date)} · ${r.count === 1 ? 'À vista' : 'Parcela ' + r.index + '/' + r.count}</small>
-              <label>Lançamento<select class="bill-field" data-target>
-                ${r.target === '?' ? '<option value="?">Conferir vínculo com compra existente</option>' : ''}
-                <option value="new" ${r.target === 'new' ? 'selected' : ''}>Nova compra</option>
-                ${r.candidates.map(c => `<option value="${esc(c.purchaseId)}" ${r.target === c.purchaseId ? 'selected' : ''}>${c.confirmed ? 'Já conferida' : 'Conciliar'} · ${esc(c.description)} · ${fmtCents(c.fullCents)} · ${c.splits.map(s => esc(getPerson(s.personId).name)).join(', ')}</option>`).join('')}
-              </select></label>
-              <label>Responsável<select class="bill-field" data-person><option value="" ${r.target !== 'new' ? 'selected' : ''}>Manter rateio da compra</option>${personOptions(r.target === 'new' ? owner : null)}</select></label>
-            </div>`).join('');
+          const owner = rows.length && !state.people.some(person => person.isOwner) ? {
+            id: state.people.some(person => person.id === 'p_italo') ? crypto.randomUUID() : 'p_italo',
+            name: holderName || 'Titular', role: 'Titular', isOwner: true,
+          } : null;
+          draft = { groups, month, owner };
+          document.getElementById('review-context').textContent = monthLabel(month);
+          document.getElementById('review-summary').textContent =
+            `${rows.length} compra(s) para conferir.` + (skipped ? ` Linhas com data sem compra reconhecida: ${skipped}.` : '');
+          reviewError.textContent = '';
+          renderStatementReview();
           pdfStatus.textContent = '';
           review.showModal();
-        } catch (error) {
+        } catch {
+          draft = null;
           pdfStatus.textContent = 'Não foi possível ler o PDF. Confira o arquivo e a senha, se houver, e tente novamente.';
-        } finally { readButton.disabled = false; }
-      };
-      review.onchange = event => {
-        if (event.target.matches('[data-target]')) {
-          event.target.closest('.review-row').querySelector('[data-person]').value =
-            event.target.value === 'new' ? state.people.find(p => p.isOwner)?.id || '' : '';
+        } finally {
+          readButton.disabled = importsReadButton.disabled = false;
         }
       };
+
+      review.onchange = event => {
+        const groupElement = event.target.closest('.review-card');
+        if (!groupElement) return;
+        if (event.target.matches('[data-card-target]')) updateStatementChoices(groupElement);
+        if (event.target.matches('[data-target]')) {
+          const group = draft.groups[Number(groupElement.dataset.group)];
+          event.target.closest('.review-row').querySelector('[data-person]').value =
+            event.target.value === 'new' ? defaultStatementPerson(group) : '';
+        }
+      };
+      ownerNameInput.oninput = () => {
+        for (const option of review.querySelectorAll('[data-pending-owner]')) {
+          option.textContent = ownerNameInput.value.trim() || 'Titular';
+        }
+      };
+
+      function reviewedNewCard(element) {
+        const field = key => element.querySelector('[data-card-' + key + ']').value.trim();
+        const last4 = field('last4');
+        if (!hasCardNumber(last4)) throw new Error('Informe os quatro últimos dígitos do cartão para continuar.');
+        const invalid = [...element.querySelectorAll('[data-card-details] input')].some(input => !input.checkValidity());
+        if (invalid) throw new Error('Confira o limite e os dias de fechamento e vencimento do cartão.');
+        return {
+          last4, name: field('name') || `Cartão final ${last4}`, institution: field('institution'),
+          brand: field('brand'), holderName: field('holder'), limit: Number(field('limit')),
+          closeDay: cardDay(field('close')), dueDay: cardDay(field('due')),
+        };
+      }
+
+      function enrichStatementCard(card, source) {
+        return {
+          ...card,
+          last4: hasCardNumber(card.last4) ? card.last4 : source.last4 || card.last4,
+          institution: institutionKey(card.institution) ? card.institution : source.institution || card.institution,
+          brand: card.brand || source.brand,
+          holderName: card.holderName || source.holderName,
+          limit: card.limit || source.limit || 0,
+          closeDay: cardDay(card.closeDay) || cardDay(source.closeDay),
+          dueDay: cardDay(card.dueDay) || cardDay(source.dueDay),
+        };
+      }
+
+      function resolveStatementCard(element, source, cards, created) {
+        const destination = element.querySelector('[data-card-target]');
+        if (!destination.value) throw new Error('Escolha o cartão de cada grupo antes de confirmar.');
+        if (destination.value !== 'new') {
+          const card = cards.find(item => item.id === destination.value.slice(5));
+          if (!card) throw new Error('O cartão escolhido mudou. Reabra o PDF para conferir.');
+          return enrichStatementCard(card, source);
+        }
+        const input = reviewedNewCard(element);
+        const matches = matchingStatementCards(input, cards);
+        if (matches.length) {
+          if (matches.length === 1) {
+            destination.value = 'card:' + matches[0].id;
+            updateStatementChoices(element);
+          }
+          throw new Error('Já há um cartão com este final e dados compatíveis. Confira o vínculo antes de confirmar.');
+        }
+        if (!hasCardNumber(source.last4)) {
+          const staged = matchingStatementCards(input, [...created.values()]);
+          if (staged.length === 1) return staged[0];
+          if (staged.length > 1) throw new Error('Confira o emissor, a bandeira ou o nome nos cartões com o mesmo final.');
+        }
+        const card = { ...input, id: crypto.randomUUID() };
+        created.set(card.id, card);
+        return card;
+      }
+
       document.getElementById('review-save').onclick = () => {
         if (!draft) return;
-        const error = document.getElementById('review-error');
-        const selected = [...review.querySelectorAll('.review-row')].filter(el => el.querySelector('[data-include]').checked);
-        if (!selected.length) { error.textContent = 'Selecione pelo menos uma compra.'; return; }
+        reviewError.textContent = '';
+        const registered = allCards();
+        const cards = new Map(state.cards.map(card => [card.id, card]));
+        const created = new Map();
         const updated = new Map();
-        for (const el of selected) {
-          const row = draft.rows[Number(el.dataset.index)];
-          const target = el.querySelector('[data-target]').value;
-          const person = el.querySelector('[data-person]').value;
-          if (target === '?' || (target === 'new' && !person) || (person && !state.people.some(p => p.id === person))) {
-            error.textContent = 'Confira o lançamento e o responsável de ' + row.description + '.'; return;
+        const currentOwner = state.people.find(person => person.isOwner);
+        const newOwner = draft.owner && !currentOwner ? {
+          ...draft.owner, name: ownerNameInput.value.trim() || 'Titular',
+        } : null;
+        const people = new Set(state.people.map(person => person.id));
+        if (newOwner) people.add(newOwner.id);
+        let firstCard;
+
+        try {
+          for (const element of review.querySelectorAll('.review-card')) {
+            const group = draft.groups[Number(element.dataset.group)];
+            const rows = [...element.querySelectorAll('.review-row')];
+            if (!rows.some(row => row.querySelector('[data-include]').checked) && !element.querySelector('[data-include-card]')?.checked) continue;
+
+            const card = resolveStatementCard(element, group.card, registered, created);
+            cards.set(card.id, card);
+            firstCard ||= card.id;
+            for (const [index, rowElement] of rows.entries()) {
+              if (!rowElement.querySelector('[data-include]').checked) continue;
+              const row = group.rows[index];
+              const target = rowElement.querySelector('[data-target]').value;
+              let person = rowElement.querySelector('[data-person]').value;
+              if (person && person === draft.owner?.id && currentOwner) person = currentOwner.id;
+              if (target === '?' || (target === 'new' && !person) || (person && !people.has(person))) {
+                throw new Error('Confira o lançamento e o responsável de ' + row.description + '.');
+              }
+              if (updated.has(target)) throw new Error('Duas linhas apontam para a mesma compra. Confira os vínculos.');
+
+              let purchase;
+              if (target === 'new') {
+                const totalCents = row.cents * row.count;
+                if (!Number.isSafeInteger(totalCents)) throw new Error('Confira o valor de ' + row.description + '.');
+                purchase = {
+                  id: 'pdf_' + crypto.randomUUID(), cardId: card.id, date: row.date,
+                  startMonth: addMonths(draft.month, 1 - row.index), category: 'Compras',
+                  description: row.description, totalCents, installments: row.count,
+                };
+              } else {
+                const previous = state.cardPurchases.find(item => item.id === target && item.cardId === card.id);
+                if (!previous) throw new Error('A compra vinculada mudou. Reabra o PDF para conferir.');
+                purchase = { ...previous };
+              }
+              if (person) purchase.splits = [{personId: person, cents: purchase.totalCents}];
+              purchase.statementAmounts = { ...purchase.statementAmounts, [draft.month]: row.cents };
+              updated.set(purchase.id, purchase);
+            }
           }
-          if (updated.has(target)) { error.textContent = 'Duas linhas apontam para a mesma compra. Confira os vínculos.'; return; }
-          let cp;
-          if (target === 'new') {
-            cp = {id: 'pdf_' + crypto.randomUUID(), cardId: draft.cardId, date: row.date, startMonth: addMonths(draft.month, 1 - row.index),
-              category: 'Compras', description: row.description, totalCents: row.cents * row.count, installments: row.count};
-          } else {
-            const prev = state.cardPurchases.find(p => p.id === target && p.cardId === draft.cardId);
-            if (!prev) { error.textContent = 'A compra vinculada mudou. Reabra o PDF para conferir.'; return; }
-            cp = {...prev};
-          }
-          if (person) cp.splits = [{personId: person, cents: cp.totalCents}];
-          cp.statementAmounts = {...cp.statementAmounts, [draft.month]: row.cents};
-          updated.set(cp.id, cp);
+          if (!firstCard) throw new Error('Selecione pelo menos um cartão ou lançamento.');
+        } catch (error) {
+          reviewError.textContent = error.message;
+          return;
         }
-        const originals = new Set(state.cardPurchases.map(p => p.id));
-        state.cardPurchases = [...updated.values()].filter(p => !originals.has(p.id)).concat(state.cardPurchases.map(p => updated.get(p.id) || p));
-        selectedCardId = draft.cardId;
+
+        const originals = new Set(state.cardPurchases.map(purchase => purchase.id));
+        state.cards = [...cards.values()];
+        if (newOwner && [...updated.values()].some(purchase => purchase.splits.some(split => split.personId === newOwner.id))) {
+          state.people.push(newOwner);
+          selectedPersonId = newOwner.id;
+        }
+        state.cardPurchases = [...updated.values()].filter(purchase => !originals.has(purchase.id))
+          .concat(state.cardPurchases.map(purchase => updated.get(purchase.id) || purchase));
+        selectedCardId = firstCard;
+        const month = draft.month;
         saveState();
+        populateSelects();
         review.close();
-        goToMonth(draft.month);
-        draft = null;
-        pdfStatus.textContent = selected.length + ' lançamento(s) conferido(s).';
+        goToMonth(month);
+        pdfStatus.textContent = [
+          created.size && created.size + (created.size === 1 ? ' cartão cadastrado' : ' cartões cadastrados'),
+          updated.size && updated.size + (updated.size === 1 ? ' lançamento conferido' : ' lançamentos conferidos'),
+        ].filter(Boolean).join(' · ') || 'Cartão conferido.';
       };
 
       const desktopNav = document.querySelector('.desktop-navigation');

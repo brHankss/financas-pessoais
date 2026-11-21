@@ -13,6 +13,10 @@ import type {
 
 let schemaInitialized = false;
 
+function cardDay(value: unknown, fallback: number): number {
+  return value === 0 ? 0 : Number(value) || fallback;
+}
+
 export function getDefaultState(): FinancialState {
   return {
     theme: 'dark',
@@ -30,6 +34,7 @@ export async function ensureSchema(db: D1Database): Promise<void> {
     `CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT (datetime('now')))`,
     `CREATE TABLE IF NOT EXISTS accounts (id TEXT PRIMARY KEY, name TEXT NOT NULL, balance REAL NOT NULL DEFAULT 0, color TEXT NOT NULL DEFAULT '#3B82F6', sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')))`,
     `CREATE TABLE IF NOT EXISTS cards (id TEXT PRIMARY KEY, name TEXT NOT NULL, institution TEXT NOT NULL DEFAULT 'Manual', last4 TEXT NOT NULL DEFAULT '0000', credit_limit REAL NOT NULL DEFAULT 0, close_day INTEGER NOT NULL DEFAULT 1, due_day INTEGER NOT NULL DEFAULT 10, sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')))`,
+    `CREATE TABLE IF NOT EXISTS card_metadata (card_id TEXT NOT NULL PRIMARY KEY REFERENCES cards(id) ON DELETE CASCADE, brand TEXT, holder_name TEXT)`,
     `CREATE TABLE IF NOT EXISTS people (id TEXT PRIMARY KEY, name TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'Família', is_owner INTEGER NOT NULL DEFAULT 0, sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')))`,
     `CREATE TABLE IF NOT EXISTS card_purchases (id TEXT PRIMARY KEY, card_id TEXT NOT NULL, purchase_date TEXT NOT NULL, start_month TEXT NOT NULL, description TEXT NOT NULL, category TEXT NOT NULL DEFAULT 'Outros', total_cents INTEGER NOT NULL DEFAULT 0, installments INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT (datetime('now')))`,
     `CREATE TABLE IF NOT EXISTS card_statement_amounts (purchase_id TEXT NOT NULL, month_key TEXT NOT NULL, cents INTEGER NOT NULL, PRIMARY KEY (purchase_id, month_key))`,
@@ -74,7 +79,9 @@ export async function loadFullState(db: D1Database): Promise<FinancialState> {
   ] = await db.batch([
     db.prepare('SELECT key, value FROM app_settings'),
     db.prepare('SELECT id, name, balance, color FROM accounts ORDER BY sort_order ASC, created_at ASC'),
-    db.prepare('SELECT id, name, institution, last4, credit_limit, close_day, due_day FROM cards ORDER BY sort_order ASC, created_at ASC'),
+    db.prepare(`SELECT c.id, c.name, c.institution, c.last4, c.credit_limit, c.close_day, c.due_day, m.brand, m.holder_name
+      FROM cards AS c LEFT JOIN card_metadata AS m ON m.card_id = c.id
+      ORDER BY c.sort_order ASC, c.created_at ASC`),
     db.prepare('SELECT id, name, role, is_owner FROM people ORDER BY sort_order ASC, created_at ASC'),
     db.prepare('SELECT id, card_id, purchase_date, start_month, description, category, total_cents, installments FROM card_purchases ORDER BY purchase_date DESC, created_at DESC'),
     db.prepare('SELECT purchase_id, person_id, cents FROM card_purchase_splits ORDER BY id ASC'),
@@ -118,8 +125,10 @@ export async function loadFullState(db: D1Database): Promise<FinancialState> {
     institution: String(r.institution || 'Manual'),
     last4: String(r.last4 || '0000'),
     limit: Number(r.credit_limit) || 0,
-    closeDay: Number(r.close_day) || 1,
-    dueDay: Number(r.due_day) || 10,
+    closeDay: cardDay(r.close_day, 1),
+    dueDay: cardDay(r.due_day, 10),
+    ...(r.brand ? { brand: String(r.brand) } : {}),
+    ...(r.holder_name ? { holderName: String(r.holder_name) } : {}),
   }));
 
   const people: Person[] = ((peopleRes.results as Array<Record<string, unknown>>) || []).map((r) => ({
@@ -245,8 +254,14 @@ export async function saveFullState(db: D1Database, state: FinancialState): Prom
     stmts.push(
       db.prepare(
         'INSERT INTO cards (id, name, institution, last4, credit_limit, close_day, due_day, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-      ).bind(c.id, c.name, c.institution || 'Manual', c.last4 || '0000', Number(c.limit) || 0, Number(c.closeDay) || 1, Number(c.dueDay) || 10, idx + 1)
+      ).bind(c.id, c.name, c.institution || 'Manual', c.last4 || '0000', Number(c.limit) || 0, cardDay(c.closeDay, 1), cardDay(c.dueDay, 10), idx + 1)
     );
+    const brand = typeof c.brand === 'string' ? c.brand.trim() : '';
+    const holderName = typeof c.holderName === 'string' ? c.holderName.trim() : '';
+    if (brand || holderName) {
+      stmts.push(db.prepare('INSERT INTO card_metadata (card_id, brand, holder_name) VALUES (?, ?, ?)')
+        .bind(c.id, brand || null, holderName || null));
+    }
   });
 
   (state.people || []).forEach((p, idx) => {

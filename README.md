@@ -12,6 +12,10 @@ Aplicativo completo de gestão financeira pessoal (contas, cartões compartilhad
 - `src/routes/` — endpoints `/api/health`, `/api/auth/*` e `/api/state`.
 - `public/` — interface web (`index.html`), cliente de sincronização D1 (`js/api-sync.js`) e `manifest.json`.
 
+## Importar fatura em PDF
+
+Em **Importação**, escolha **Importar fatura de cartão em PDF**. O app lê PDFs com texto selecionável, separa as compras por cartão e preenche os dados que encontra, como final, nome, emissor e bandeira. Confira as associações e os rateios na revisão. Ao confirmar, o app cadastra os cartões novos e reaproveita os existentes que foram identificados.
+
 ## Como publicar na Cloudflare (com atualizações automáticas)
 
 1. Suba todos os arquivos deste projeto na branch `main` do repositório `brHankss/financas-pessoais`.

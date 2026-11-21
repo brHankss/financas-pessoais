@@ -27,6 +27,8 @@ export interface Card {
   limit: number;
   closeDay: number;
   dueDay: number;
+  brand?: string;
+  holderName?: string;
 }
 
 export interface Person {
