@@ -214,6 +214,7 @@ export async function loadFullState(db: D1Database): Promise<FinancialState> {
 export async function saveFullState(db: D1Database, state: FinancialState): Promise<void> {
   const stmts: D1PreparedStatement[] = [
     db.prepare('DELETE FROM card_purchase_splits'),
+    db.prepare('DELETE FROM card_statement_amounts'),
     db.prepare('DELETE FROM card_purchases'),
     db.prepare('DELETE FROM person_events'),
     db.prepare('DELETE FROM fixed_incomes'),
@@ -309,7 +310,6 @@ export async function saveFullState(db: D1Database, state: FinancialState): Prom
     );
   });
 
-  stmts.push(db.prepare('DELETE FROM card_statement_amounts WHERE purchase_id NOT IN (SELECT id FROM card_purchases)'));
   await db.batch(stmts);
 }
 

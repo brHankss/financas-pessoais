@@ -36,25 +36,31 @@
   }
 
   async function pullFromCloud() {
+    d1Enabled = false;
+    let loginRequired = false;
+    callbacks.setLocked?.(true);
     try {
-      const res = await fetch('/api/state', { credentials: 'same-origin' });
+      const res = await fetch('/api/state', { credentials: 'same-origin', signal: AbortSignal.timeout(10000) });
       if (res.status === 401) {
+        loginRequired = true;
         toggleAuthGate(true);
         setStatus('Login necessário', 'warn');
         return;
       }
       if (!res.ok) throw new Error('API offline');
       const data = await res.json();
-      d1Enabled = Boolean(data.d1Connected);
-      if (d1Enabled && data.state && callbacks) {
+      if (data.d1Connected && data.state) {
         callbacks.setState(data.state);
         callbacks.onRender();
-        setStatus('Cloudflare D1 ativo', 'ok');
+        d1Enabled = Boolean(callbacks.workspaceVersion);
+        setStatus(d1Enabled ? 'Cloudflare D1 ativo' : 'Recarregue para salvar na nuvem', d1Enabled ? 'ok' : 'warn');
       } else {
         setStatus('Armazenamento local', 'warn');
       }
     } catch {
       setStatus('Armazenamento local', 'warn');
+    } finally {
+      callbacks.setLocked?.(loginRequired);
     }
   }
 
@@ -65,10 +71,12 @@
       const res = await fetch('/api/state', {
         method: 'PUT',
         credentials: 'same-origin',
-        headers: { 'content-type': 'application/json', 'X-Workspace-Version': 'fresh-20261121' },
+        headers: { 'content-type': 'application/json', 'X-Workspace-Version': callbacks.workspaceVersion },
         body: JSON.stringify({ state: stateObj }),
       });
       if (res.status === 401) {
+        d1Enabled = false;
+        callbacks.setLocked?.(true);
         toggleAuthGate(true);
         setStatus('Sessão expirada', 'error');
         return;
@@ -134,13 +142,13 @@
     async init(opts) {
       callbacks = opts;
       bindAuthForm();
+      callbacks.setLocked?.(true);
       setStatus('Conectando...', 'saving');
       try {
-        const meRes = await fetch('/api/auth/me', { credentials: 'same-origin' });
+        const meRes = await fetch('/api/auth/me', { credentials: 'same-origin', signal: AbortSignal.timeout(10000) });
         if (!meRes.ok) throw new Error('Sem backend');
         const me = await meRes.json();
         authRequired = Boolean(me.authRequired);
-        d1Enabled = Boolean(me.d1Connected);
         showLogoutButton(authRequired && Boolean(me.authenticated));
         if (authRequired && !me.authenticated) {
           toggleAuthGate(true);
@@ -150,6 +158,7 @@
         await pullFromCloud();
       } catch {
         setStatus('Modo preview local', 'warn');
+        callbacks.setLocked?.(false);
       }
     },
 
