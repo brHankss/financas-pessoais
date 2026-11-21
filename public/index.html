@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Finanças — Claro & Escuro (Cartões Compartilhados + Pluggy)</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', 'Segoe UI', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root { --safe-bottom: env(safe-area-inset-bottom, 0px); }
+    html, body { overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+      background-color: #F7F7F9;
+      color: #111114;
+    }
+    html.dark body {
+      background-color: #0E0E10;
+      color: #F4F4F6;
+    }
+    .card {
+      background-color: #FFFFFF;
+      border: 1px solid #EAEAEF;
+    }
+    html.dark .card {
+      background-color: #161619;
+      border: 1px solid #26262B;
+    }
+    .hairline { border-color: #EAEAEF; }
+    html.dark .hairline { border-color: #26262B; }
+    .side-link.active {
+      background-color: #F1F1F4;
+      color: #111114;
+      font-weight: 600;
+    }
+    html.dark .side-link.active {
+      background-color: #222227;
+      color: #FFFFFF;
+    }
+    .mob-nav.active { color: #3B82F6; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .modal-backdrop { background-color: rgba(10, 10, 14, 0.62); backdrop-filter: blur(4px); }
+    .iridescent-subtle {
+      background: linear-gradient(135deg, rgba(139,92,246,0.12) 0%, rgba(59,130,246,0.12) 55%, rgba(16,185,129,0.08) 100%);
+    }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #FFFFFF !important; color: #000000 !important; }
+      .card { border: 1px solid #CBD5E1 !important; box-shadow: none !important; }
+    }
+  </style>
+  <link rel="manifest" href="/manifest.json" />
+  <script src="/js/api-sync.js"></script>
+</head>
+<body class="min-h-screen antialiased pb-20 lg:pb-0 transition-colors duration-150">
+  <div class="min-h-screen flex flex-col lg:flex-row">
+    <!-- DESKTOP SIDEBAR (Saffron Clean Monochrome + Status Card) -->
+    <aside class="no-print hidden lg:flex lg:w-60 lg:flex-col justify-between py-4 px-3.5 border-r hairline bg-white dark:bg-[#121215] shrink-0">
+      <div class="space-y-5">
+        <div class="flex items-center justify-between px-2">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-bold text-xs">FP</div>
+            <div>
+              <div class="text-sm font-bold leading-tight">Finanças</div>
+              <div class="text-[11px] text-zinc-400">Pluggy + Manual</div>
+            </div>
+          </div>
+          <button type="button" id="btn-orb-side" title="Fluid Orb (Rare UI) — clique para alternar cor" class="w-8 h-8 rounded-full overflow-hidden ring-2 ring-zinc-200 dark:ring-zinc-700 shrink-0" style="background: radial-gradient(circle at 35% 30%, #ffffff 0%, #60a5fa 45%, #1a73f2 100%);">
+            <canvas id="fluid-orb-side" class="w-full h-full block"></canvas>
+          </button>
+        </div>
+
+        <nav class="space-y-0.5 text-[13px]">
+          <button type="button" data-view="dashboard" class="side-link active w-full flex items-center justify-between px-3 py-2 rounded-xl text-zinc-500 dark:text-zinc-400 transition">
+            <span class="flex items-center gap-2.5"><i data-lucide="layout-dashboard" class="w-4 h-4"></i><span>Resumo geral</span></span>
+          </button>
+          <button type="button" data-view="cards" class="side-link w-full flex items-center justify-between px-3 py-2 rounded-xl text-zinc-500 dark:text-zinc-400 transition">
+            <span class="flex items-center gap-2.5"><i data-lucide="credit-card" class="w-4 h-4"></i><span>Cartões e rateio</span></span>
+            <span id="side-cnt-cards" class="px-1.5 py-0.5 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-bold">6</span>
+          </button>
+          <button type="button" data-view="transactions" class="side-link w-full flex items-center justify-between px-3 py-2 rounded-xl text-zinc-500 dark:text-zinc-400 transition">
+            <span class="flex items-center gap-2.5"><i data-lucide="arrow-left-right" class="w-4 h-4"></i><span>Extrato e salários</span></span>
+          </button>
+          <button type="button" data-view="investments" class="side-link w-full flex items-center justify-between px-3 py-2 rounded-xl text-zinc-500 dark:text-zinc-400 transition">
+            <span class="flex items-center gap-2.5"><i data-lucide="trending-up" class="w-4 h-4"></i><span>Investimentos</span></span>
+          </button>
+          <button type="button" data-view="pluggy" class="side-link w-full flex items-center justify-between px-3 py-2 rounded-xl text-zinc-500 dark:text-zinc-400 transition">
+            <span class="flex items-center gap-2.5"><i data-lucide="users" class="w-4 h-4"></i><span>Pessoas e ajustes</span></span>
+          </button>
+        </nav>
+
+        <!-- Saffron "Branches" equivalent: Pessoas nos cartões -->
+        <div class="rounded-2xl border hairline p-3 space-y-2 bg-zinc-50/70 dark:bg-[#18181C]">
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="font-semibold text-zinc-700 dark:text-zinc-200">Pessoas no mês</span>
+            <span id="side-people-open" class="text-zinc-400">3 abertas</span>
+          </div>
+          <div id="side-people-rows" class="space-y-1.5 text-xs"></div>
+        </div>
+      </div>
+
+      <!-- Saffron Bottom Weekly Report / Summary Card -->
+      <div class="rounded-2xl border hairline p-3.5 space-y-2.5 bg-zinc-50/70 dark:bg-[#18181C]">
+        <div class="flex items-center gap-2 text-xs font-semibold">
+          <i data-lucide="file-text" class="w-3.5 h-3.5 text-blue-500"></i>
+          <span>Resumo individual</span>
+        </div>
+        <p class="text-[11px] text-zinc-400 leading-snug">Confira compras, parcelas e saldo restante antes de compartilhar.</p>
+        <button type="button" id="btn-side-share" class="w-full h-8 rounded-xl border hairline bg-white dark:bg-[#222227] text-xs font-semibold hover:border-blue-500 transition">Conferir resumo</button>
+        <div class="text-[10px] text-zinc-400 text-center">Fluid Orb por <a href="https://www.rareui.com/" target="_blank" rel="noopener noreferrer" class="underline hover:text-blue-500">Rare UI</a></div>
+      </div>
+    </aside>
+
+    <!-- MAIN AREA -->
+    <div class="flex-1 flex flex-col min-w-0">
+      <!-- TOP BAR (Saffron Sun/Moon Pill Toggle + Search + Solid Pill CTA) -->
+      <header class="no-print sticky top-0 z-20 h-14 px-4 sm:px-6 border-b hairline bg-white/95 dark:bg-[#121215]/95 backdrop-blur-md flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <button type="button" id="btn-orb-mob" title="Fluid Orb (Rare UI)" class="lg:hidden w-8 h-8 rounded-full overflow-hidden ring-2 ring-zinc-200 dark:ring-zinc-700 shrink-0" style="background: radial-gradient(circle at 35% 30%, #ffffff 0%, #60a5fa 45%, #1a73f2 100%);">
+            <canvas id="fluid-orb-mob" class="w-full h-full block"></canvas>
+          </button>
+          <div class="inline-flex items-center rounded-full border hairline bg-zinc-50 dark:bg-[#1C1C21] p-0.5">
+            <button type="button" id="btn-prev-month" aria-label="Mês anterior" class="w-7 h-7 rounded-full flex items-center justify-center text-zinc-500 hover:bg-white dark:hover:bg-zinc-700"><i data-lucide="chevron-left" class="w-3.5 h-3.5"></i></button>
+            <select id="global-month-filter" aria-label="Mês" class="bg-transparent text-xs font-semibold px-1.5 focus:outline-none cursor-pointer">
+              <option value="2026-10">Out 2026</option>
+              <option value="2026-11" selected>Nov 2026</option>
+              <option value="2026-12">Dez 2026</option>
+              <option value="2027-01">Jan 2027</option>
+              <option value="2027-02">Fev 2027</option>
+            </select>
+            <button type="button" id="btn-next-month" aria-label="Próximo mês" class="w-7 h-7 rounded-full flex items-center justify-center text-zinc-500 hover:bg-white dark:hover:bg-zinc-700"><i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></button>
+          </div>
+        </div>
+
+        <!-- Center Search (Desktop) -->
+        <div class="hidden md:flex items-center relative w-72">
+          <i data-lucide="search" class="w-3.5 h-3.5 text-zinc-400 absolute left-3.5"></i>
+          <input id="global-search" type="text" placeholder="Buscar compras, cartões, pessoas..." class="w-full h-9 pl-9 pr-3 rounded-full border hairline bg-zinc-50 dark:bg-[#1C1C21] text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
+        </div>
+
+        <!-- Right: Saffron Sun/Moon Pill Switch + Primary Pill Button -->
+        <div class="flex items-center gap-2">
+          <div class="inline-flex items-center p-0.5 rounded-full border hairline bg-zinc-100 dark:bg-[#1C1C21]">
+            <button type="button" id="btn-theme-light" aria-label="Tema claro" class="w-7 h-7 rounded-full flex items-center justify-center text-zinc-700 bg-white dark:bg-transparent dark:text-zinc-400 shadow-xs transition"><i data-lucide="sun" class="w-3.5 h-3.5"></i></button>
+            <button type="button" id="btn-theme-dark" aria-label="Tema escuro" class="w-7 h-7 rounded-full flex items-center justify-center text-zinc-400 dark:bg-zinc-700 dark:text-white transition"><i data-lucide="moon" class="w-3.5 h-3.5"></i></button>
+          </div>
+          <button type="button" id="btn-top-add" class="h-9 px-3.5 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-semibold inline-flex items-center gap-1.5 hover:opacity-90 transition">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>Lançar</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- MAIN CONTAINER -->
+      <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-5 space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div class="text-[11px] text-zinc-400">Finanças Pessoais &gt; <span id="crumb-label">Resumo geral</span></div>
+            <h1 id="page-heading" class="text-xl sm:text-2xl font-bold tracking-tight mt-0.5">Resumo geral</h1>
+          </div>
+          <div class="flex items-center gap-2 no-print">
+            <button type="button" id="btn-quick-set" class="h-8 px-3 rounded-full border hairline bg-white dark:bg-[#1C1C21] text-xs font-medium inline-flex items-center gap-1.5 hover:border-emerald-500 transition">
+              <i data-lucide="banknote" class="w-3.5 h-3.5 text-emerald-500"></i>
+              <span>Acerto</span>
+            </button>
+            <button type="button" id="btn-quick-sync" class="h-8 px-3 rounded-full border hairline bg-white dark:bg-[#1C1C21] text-xs font-medium inline-flex items-center gap-1.5 hover:border-blue-500 transition">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-blue-500"></i>
+              <span class="hidden sm:inline">Pluggy OK</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ================================================= -->
+        <!-- VIEW 1: RESUMO GERAL (SAFFRON LIGHT & DARK UI!)   -->
+        <!-- ================================================= -->
+        <section id="view-dashboard" class="space-y-4">
+          <!-- ROW 1: 3 Saffron Micro-Viz KPI Cards -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <!-- Card 1: Dinheiro Disponível + Mini Ring (Saffron "TOTAL REVENUE" card!) -->
+            <div class="card rounded-2xl p-5 flex flex-col justify-between gap-4">
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Dinheiro disponível</div>
+                  <div id="kpi-cash" class="text-2xl sm:text-3xl font-bold tabular-nums tracking-tight">R$ 0,00</div>
+                  <div class="text-xs font-medium text-emerald-500">Reembolsos futuros fora do caixa</div>
+                </div>
+                <!-- Mini Donut Ring -->
+                <div class="relative w-16 h-16 shrink-0 flex items-center justify-center">
+                  <svg viewBox="0 0 64 64" class="w-16 h-16 -rotate-90">
+                    <circle cx="32" cy="32" r="24" fill="none" stroke="currentColor" class="text-zinc-100 dark:text-zinc-800" stroke-width="7" />
+                    <circle id="ring-acc-main" cx="32" cy="32" r="24" fill="none" stroke="#3B82F6" stroke-width="7" stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="64" />
+                  </svg>
+                  <div class="absolute text-center">
+                    <div id="ring-acc-pct" class="text-xs font-bold leading-none">57%</div>
+                    <div class="text-[9px] text-zinc-400 mt-0.5">Itaú</div>
+                  </div>
+                </div>
+              </div>
+              <div id="kpi-acc-breakdown" class="space-y-1.5 text-xs pt-2 border-t hairline"></div>
+            </div>
+
+            <!-- Card 2: Fatura Integral + Purple/White Segmented Range Bar (Saffron "AVG. ORDER VALUE" card!) -->
+            <div class="card rounded-2xl p-5 flex flex-col justify-between gap-4">
+              <div class="space-y-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Fatura integral (banco)</span>
+                  <button type="button" data-jump="cards" class="text-[11px] font-medium text-blue-500 hover:underline">Ver detalhes</button>
+                </div>
+                <div id="kpi-bill" class="text-2xl sm:text-3xl font-bold tabular-nums tracking-tight">R$ 0,00</div>
+                <div id="kpi-bill-sub" class="text-xs text-zinc-400">100% obrigação com o banco</div>
+              </div>
+              <div class="space-y-2 pt-1">
+                <div id="bill-range-bar" class="h-2.5 w-full rounded-full overflow-hidden flex gap-0.5 bg-zinc-100 dark:bg-zinc-800"></div>
+                <div id="bill-range-labels" class="flex justify-between text-[11px] text-zinc-400 tabular-nums"></div>
+              </div>
+            </div>
+
+            <!-- Card 3: A Receber de Terceiros + Orange Segmented Bar (Saffron "AVG. SERVE TIME" card!) -->
+            <div class="card rounded-2xl p-5 flex flex-col justify-between gap-4">
+              <div class="space-y-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">A receber (off-budget)</span>
+                  <button type="button" data-jump="cards" class="text-[11px] font-medium text-blue-500 hover:underline">Rateio</button>
+                </div>
+                <div id="kpi-rec" class="text-2xl sm:text-3xl font-bold tabular-nums tracking-tight">R$ 0,00</div>
+                <div id="kpi-rec-sub" class="text-xs text-emerald-500 font-medium">Isolado do saldo disponível</div>
+              </div>
+              <div class="space-y-2">
+                <div id="rec-seg-bar" class="h-2 w-full rounded-full overflow-hidden flex gap-1 bg-zinc-100 dark:bg-zinc-800"></div>
+                <div id="rec-people-mini" class="space-y-1.5 text-xs pt-1"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ROW 2: Saffron "MARGIN VS GOAL" Chart (Left 8 cols) + "Food Waste / Rateio" Bars (Right 4 cols) -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <!-- Left: Gasto Próprio vs. Meta (Saffron Bar + Dashed Green Goal Line!) -->
+            <div class="card lg:col-span-8 rounded-2xl p-5 flex flex-col justify-between gap-4">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <div class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Gasto próprio vs. teto mensal</div>
+                  <div class="flex items-baseline gap-2.5 mt-0.5">
+                    <span id="goal-own-val" class="text-xl font-bold tabular-nums">R$ 0,00</span>
+                    <span id="goal-cap-txt" class="text-xs text-zinc-400">de R$ 12.000,00</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button type="button" id="btn-edit-cap" class="h-7 px-2.5 rounded-full border hairline text-[11px] font-medium hover:border-blue-500">Editar teto</button>
+                  <span id="goal-pct-badge" class="px-2.5 py-1 rounded-full bg-blue-500 text-white text-[11px] font-bold">64% teto</span>
+                </div>
+              </div>
+
+              <!-- Micro Vertical Bar Chart with Dashed Green Goal Line -->
+              <div class="relative pt-7 pb-1">
+                <div class="absolute inset-x-0 top-12 border-t border-dashed border-emerald-500/70 flex justify-end pointer-events-none">
+                  <span class="px-1.5 py-0.5 -mt-3 rounded bg-emerald-500/15 text-emerald-500 text-[10px] font-semibold">Meta teto</span>
+                </div>
+                <div id="saffron-bars" class="grid grid-cols-7 gap-2 sm:gap-3 items-end h-36"></div>
+              </div>
+            </div>
+
+            <!-- Right: Rateio por Pessoa (Saffron "Food waste" Horizontal Bars + Fluid Orb!) -->
+            <div class="card lg:col-span-4 rounded-2xl p-5 flex flex-col justify-between gap-4">
+              <div class="flex items-start justify-between">
+                <div>
+                  <div class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Terceiros na fatura</div>
+                  <div id="third-tot-val" class="text-2xl font-bold tabular-nums mt-1">R$ 0,00</div>
+                  <div id="third-tot-sub" class="text-xs text-emerald-500 font-medium mt-0.5">3 pessoas rastreadas</div>
+                </div>
+                <div class="w-11 h-11 rounded-full overflow-hidden ring-2 ring-zinc-200 dark:ring-zinc-700 shrink-0" style="background: radial-gradient(circle at 35% 30%, #ffffff 0%, #60a5fa 45%, #1a73f2 100%);">
+                  <canvas id="fluid-orb-card" class="w-full h-full block"></canvas>
+                </div>
+              </div>
+
+              <div id="saffron-people-bars" class="space-y-3"></div>
+
+              <div class="pt-2 border-t hairline flex items-center justify-between text-[11px] text-zinc-400">
+                <span>CDI atual: <strong id="dash-cdi-val" class="text-zinc-700 dark:text-zinc-200">13,65%</strong></span>
+                <button type="button" data-jump="investments" class="text-blue-500 font-semibold hover:underline">Rend.: <span id="dash-inv-m">+R$ 0</span>/mês</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ROW 3: Saffron "TOP DISHES" equivalent -> Maiores Compras no Cartão -->
+          <div class="card rounded-2xl overflow-hidden">
+            <div class="px-5 py-3.5 border-b hairline flex items-center justify-between">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Principais compras no cartão (toque para dividir / rateio)</span>
+              <button type="button" data-jump="cards" class="text-xs font-semibold text-blue-500 hover:underline">Ver todas</button>
+            </div>
+            <div id="saffron-top-purchases" class="divide-y hairline"></div>
+          </div>
+        </section>
+
+        <!-- ================================================= -->
+        <!-- VIEW 2: CARTÕES COMPARTILHADOS                    -->
+        <!-- ================================================= -->
+        <section id="view-cards" class="hidden space-y-4">
+          <div id="cards-strip" class="flex gap-3 overflow-x-auto no-scrollbar pb-1"></div>
+
+          <div class="card rounded-2xl p-4 sm:p-5 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 class="text-sm font-bold">Extrato por pessoa e mês</h2>
+                <p class="text-xs text-zinc-400">Compras, parcelas futuras, recebimentos parciais, adiantamentos e estornos</p>
+              </div>
+              <div class="flex flex-wrap gap-2 no-print">
+                <button type="button" id="btn-open-set" class="h-9 px-3 rounded-full bg-emerald-600 text-white text-xs font-semibold inline-flex items-center gap-1.5"><i data-lucide="banknote" class="w-3.5 h-3.5"></i><span>Acerto</span></button>
+                <button type="button" id="btn-open-share" class="h-9 px-3 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-semibold inline-flex items-center gap-1.5"><i data-lucide="share-2" class="w-3.5 h-3.5"></i><span>Resumo</span></button>
+              </div>
+            </div>
+
+            <div id="person-pills" class="flex gap-2 overflow-x-auto no-scrollbar pb-1"></div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+              <div class="p-3 rounded-xl border hairline"><div class="text-[11px] text-zinc-400">À vista</div><div id="p-spot" class="text-sm font-bold tabular-nums mt-0.5">R$ 0,00</div></div>
+              <div class="p-3 rounded-xl border hairline"><div class="text-[11px] text-zinc-400">Parcelas</div><div id="p-inst" class="text-sm font-bold tabular-nums mt-0.5">R$ 0,00</div></div>
+              <div class="p-3 rounded-xl border hairline"><div class="text-[11px] text-zinc-400">A cobrar</div><div id="p-charge" class="text-sm font-bold tabular-nums text-blue-500 mt-0.5">R$ 0,00</div></div>
+              <div class="p-3 rounded-xl border hairline"><div class="text-[11px] text-zinc-400">Recebido / Adiant.</div><div id="p-rec" class="text-sm font-bold tabular-nums text-emerald-500 mt-0.5">R$ 0,00</div></div>
+              <div class="col-span-2 sm:col-span-1 p-3 rounded-xl iridescent-subtle border border-blue-500/30"><div class="text-[11px] text-blue-500 font-semibold">Saldo restante</div><div id="p-bal" class="text-sm font-bold tabular-nums mt-0.5">R$ 0,00</div></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between"><span class="text-xs font-semibold text-zinc-400">Compras e parcelas no mês</span><button type="button" id="btn-card-add-pur" class="text-xs font-semibold text-blue-500">+ Compra</button></div>
+                <div id="p-items-list" class="rounded-xl border hairline divide-y hairline"></div>
+              </div>
+              <div class="space-y-2">
+                <span class="text-xs font-semibold text-zinc-400 block">Histórico (recebimentos, adiantamentos, estornos)</span>
+                <div id="p-events-list" class="rounded-xl border hairline divide-y hairline"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card rounded-2xl overflow-hidden">
+            <div class="px-5 py-3.5 border-b hairline flex flex-wrap items-center justify-between gap-2">
+              <div><div id="bill-title" class="text-sm font-bold">Fatura integral</div><div class="text-xs text-zinc-400">Obrigação integral com o banco · toque em uma compra para dividir</div></div>
+              <button type="button" id="btn-pay-bill" class="h-8 px-3 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-semibold">Pagar fatura integral</button>
+            </div>
+            <div id="bill-rows" class="divide-y hairline"></div>
+          </div>
+        </section>
+
+        <!-- ================================================= -->
+        <!-- VIEW 3: EXTRATO E SALÁRIOS                        -->
+        <!-- ================================================= -->
+        <section id="view-transactions" class="hidden space-y-4">
+          <div class="card rounded-2xl overflow-hidden">
+            <div class="px-5 py-3.5 border-b hairline flex items-center justify-between">
+              <span class="text-sm font-semibold">Salários e rendas fixas</span>
+              <div class="flex gap-2"><button type="button" id="btn-add-sal" class="h-8 px-3 rounded-full border hairline text-xs font-semibold">+ Fixo</button><button type="button" id="btn-add-btx" class="h-8 px-3 rounded-full bg-emerald-600 text-white text-xs font-semibold">+ Extra</button></div>
+            </div>
+            <div id="sal-rows" class="divide-y hairline"></div>
+          </div>
+          <div class="card rounded-2xl overflow-hidden">
+            <div class="px-5 py-3.5 border-b hairline flex items-center justify-between"><span class="text-sm font-semibold">Movimentações em conta</span><span id="btx-count" class="text-xs text-zinc-400">0 itens</span></div>
+            <div id="btx-rows" class="divide-y hairline"></div>
+          </div>
+        </section>
+
+        <!-- ================================================= -->
+        <!-- VIEW 4: INVESTIMENTOS (CDI REAL)                  -->
+        <!-- ================================================= -->
+        <section id="view-investments" class="hidden space-y-4">
+          <div class="card rounded-2xl p-5 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div class="text-xs text-zinc-400">Carteira bruta · Rendimento líquido projetado</div>
+                <div class="flex items-baseline gap-3 mt-1"><span id="inv-gross-tot" class="text-2xl font-bold tabular-nums">R$ 0,00</span><span id="inv-month-tot" class="text-sm font-bold text-emerald-500 tabular-nums">+R$ 0,00/mês</span></div>
+              </div>
+              <button type="button" id="btn-add-inv" class="h-8 px-3.5 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-semibold">+ Ativo</button>
+            </div>
+            <div class="grid grid-cols-3 gap-2.5 text-xs">
+              <label class="block"><span class="text-[11px] text-zinc-400 block mb-1">CDI % a.a.</span><input id="rate-cdi" type="number" step="0.05" value="13.65" class="w-full h-9 px-2.5 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] font-semibold" /></label>
+              <label class="block"><span class="text-[11px] text-zinc-400 block mb-1">IPCA % a.a.</span><input id="rate-ipca" type="number" step="0.1" value="4.50" class="w-full h-9 px-2.5 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] font-semibold" /></label>
+              <label class="block"><span class="text-[11px] text-zinc-400 block mb-1">IR padrão</span><select id="rate-ir" class="w-full h-9 px-2 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] font-semibold"><option value="0.225">22,5%</option><option value="0.20">20%</option><option value="0.175" selected>17,5%</option><option value="0.15">15%</option></select></label>
+            </div>
+          </div>
+          <div class="card rounded-2xl overflow-hidden"><div id="inv-rows" class="divide-y hairline"></div></div>
+        </section>
+
+        <!-- ================================================= -->
+        <!-- VIEW 5: PESSOAS E AJUSTES                         -->
+        <!-- ================================================= -->
+        <section id="view-pluggy" class="hidden space-y-4">
+          <div class="card rounded-2xl overflow-hidden">
+            <div class="px-5 py-3.5 border-b hairline flex items-center justify-between"><span class="text-sm font-semibold">Pessoas nos cartões</span><button type="button" id="btn-cfg-person" class="h-8 px-3 rounded-full bg-blue-600 text-white text-xs font-semibold">+ Pessoa</button></div>
+            <div id="cfg-people-rows" class="divide-y hairline"></div>
+          </div>
+          <div class="card rounded-2xl p-5 space-y-3">
+            <div class="text-sm font-semibold">Backup JSON e dados fictícios</div>
+            <p class="text-xs text-zinc-400">Dados fictícios para validação. Fluid Orb por <a href="https://www.rareui.com/" target="_blank" rel="noopener noreferrer" class="text-blue-500 underline">Rare UI</a>.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <button type="button" id="btn-export-json" class="h-10 rounded-xl border hairline text-xs font-semibold">Exportar JSON</button>
+              <label class="h-10 rounded-xl border hairline text-xs font-semibold flex items-center justify-center cursor-pointer"><span>Importar JSON</span><input id="input-import-json" type="file" accept="application/json" class="hidden" /></label>
+              <button type="button" id="btn-reset-demo" class="h-10 rounded-xl bg-rose-500/10 text-rose-500 text-xs font-semibold">Restaurar padrão</button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- MOBILE BOTTOM NAVIGATION BAR -->
+  <nav class="no-print lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 dark:bg-[#121215]/95 backdrop-blur-lg border-t hairline" style="padding-bottom: var(--safe-bottom);">
+    <div class="grid grid-cols-5 h-16 max-w-lg mx-auto">
+      <button type="button" data-view="dashboard" class="mob-nav active flex flex-col items-center justify-center gap-1 text-zinc-400"><i data-lucide="layout-dashboard" class="w-5 h-5"></i><span class="text-[10px] font-medium">Resumo</span></button>
+      <button type="button" data-view="cards" class="mob-nav flex flex-col items-center justify-center gap-1 text-zinc-400"><i data-lucide="credit-card" class="w-5 h-5"></i><span class="text-[10px] font-medium">Cartões</span></button>
+      <button type="button" data-view="transactions" class="mob-nav flex flex-col items-center justify-center gap-1 text-zinc-400"><i data-lucide="arrow-left-right" class="w-5 h-5"></i><span class="text-[10px] font-medium">Extrato</span></button>
+      <button type="button" data-view="investments" class="mob-nav flex flex-col items-center justify-center gap-1 text-zinc-400"><i data-lucide="trending-up" class="w-5 h-5"></i><span class="text-[10px] font-medium">Invest.</span></button>
+      <button type="button" data-view="pluggy" class="mob-nav flex flex-col items-center justify-center gap-1 text-zinc-400"><i data-lucide="users" class="w-5 h-5"></i><span class="text-[10px] font-medium">Pessoas</span></button>
+    </div>
+  </nav>
+
+  <!-- BOTTOM-SHEET MODALS -->
+  <div id="modal-purchase" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
+    <div class="absolute inset-0 modal-backdrop" data-close-modal="modal-purchase"></div>
+    <div class="relative w-full sm:max-w-lg card rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
+      <div class="sm:hidden flex justify-center pt-2.5"><span class="w-10 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700"></span></div>
+      <div class="px-5 py-3.5 border-b hairline flex items-center justify-between"><h3 id="modal-pur-title" class="text-sm font-bold">Nova compra e rateio</h3><button type="button" data-close-modal="modal-purchase" class="p-1.5 text-zinc-400"><i data-lucide="x" class="w-4 h-4"></i></button></div>
+      <form id="form-purchase" class="p-5 space-y-3.5 overflow-y-auto">
+        <input type="hidden" id="pur-id" />
+        <input id="pur-desc" type="text" required placeholder="Estabelecimento / descrição" class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-sm" />
+        <div class="grid grid-cols-2 gap-3">
+          <input id="pur-total" type="number" step="0.01" min="0.01" required placeholder="Valor total R$" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-sm font-bold" />
+          <input id="pur-inst" type="number" min="1" max="24" value="1" required placeholder="Parcelas" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-sm font-bold" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <select id="pur-card" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-xs"></select>
+          <input id="pur-date" type="date" required value="2026-11-20" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-xs" />
+        </div>
+        <select id="pur-cat" class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-xs"></select>
+        <div class="rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] p-3.5 space-y-2.5">
+          <div class="flex items-center justify-between"><span class="text-xs font-bold">Divisão / Responsáveis</span><div class="flex gap-1.5"><button type="button" id="btn-split-eq" class="px-2 py-1 rounded-lg border hairline bg-white dark:bg-zinc-800 text-[11px] font-semibold">Igual</button><button type="button" id="btn-add-sp" class="px-2 py-1 rounded-lg bg-blue-600 text-white text-[11px] font-semibold">+ Pessoa</button></div></div>
+          <div id="split-rows" class="space-y-2"></div>
+          <div class="flex justify-between text-xs pt-2 border-t hairline"><span class="text-zinc-400">Soma</span><span id="split-st" class="font-bold text-emerald-500">R$ 0,00 / R$ 0,00</span></div>
+        </div>
+        <div class="flex gap-2">
+          <button type="button" id="btn-del-pur" class="hidden h-11 px-4 rounded-xl bg-rose-500/10 text-rose-500 text-xs font-semibold">Excluir</button>
+          <button type="submit" class="flex-1 h-11 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-semibold">Salvar compra</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-settlement" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
+    <div class="absolute inset-0 modal-backdrop" data-close-modal="modal-settlement"></div>
+    <div class="relative w-full sm:max-w-md card rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden">
+      <div class="sm:hidden flex justify-center pt-2.5"><span class="w-10 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700"></span></div>
+      <div class="px-5 py-3.5 border-b hairline flex items-center justify-between"><h3 class="text-sm font-bold">Registrar acerto</h3><button type="button" data-close-modal="modal-settlement" class="p-1.5 text-zinc-400"><i data-lucide="x" class="w-4 h-4"></i></button></div>
+      <form id="form-settlement" class="p-5 space-y-3">
+        <div class="grid grid-cols-2 gap-2.5"><select id="set-person" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-xs"></select><select id="set-type" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-xs"><option value="repayment">Recebimento</option><option value="advance">Adiantamento</option><option value="refund">Estorno</option></select></div>
+        <div class="grid grid-cols-2 gap-2.5"><input id="set-amount" type="number" step="0.01" min="0.01" required placeholder="Valor R$" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-sm font-bold" /><input id="set-date" type="date" required value="2026-11-20" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-xs" /></div>
+        <select id="set-account" class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-xs"></select>
+        <input id="set-note" type="text" placeholder="Observação (preservada no histórico)" class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-xs" />
+        <button type="submit" class="w-full h-11 rounded-xl bg-emerald-600 text-white text-sm font-semibold">Salvar no histórico</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-share" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
+    <div class="absolute inset-0 modal-backdrop" data-close-modal="modal-share"></div>
+    <div class="relative w-full sm:max-w-lg card rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden">
+      <div class="sm:hidden flex justify-center pt-2.5"><span class="w-10 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700"></span></div>
+      <div class="px-5 py-3.5 border-b hairline flex items-center justify-between"><h3 class="text-sm font-bold">Conferir resumo individual</h3><button type="button" data-close-modal="modal-share" class="p-1.5 text-zinc-400"><i data-lucide="x" class="w-4 h-4"></i></button></div>
+      <div class="p-5 space-y-3">
+        <p class="text-xs text-zinc-400">Confira antes de copiar. Nenhum envio é disparado automaticamente.</p>
+        <textarea id="share-text" rows="10" readonly class="w-full p-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] font-mono text-xs focus:outline-none"></textarea>
+        <button type="button" id="btn-copy-share" class="w-full h-11 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-semibold">Copiar resumo</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-person" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"><div class="absolute inset-0 modal-backdrop" data-close-modal="modal-person"></div><div class="relative w-full sm:max-w-md card rounded-t-3xl sm:rounded-2xl p-5 space-y-3"><div class="flex justify-between items-center"><h3 class="text-sm font-bold">Nova pessoa</h3><button type="button" data-close-modal="modal-person"><i data-lucide="x" class="w-4 h-4 text-zinc-400"></i></button></div><form id="form-person" class="space-y-3"><input id="person-name" type="text" required placeholder="Nome" class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-sm" /><select id="person-role" class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-xs"><option value="Dependente">Dependente</option><option value="Família">Família</option><option value="Negócio">Negócio</option></select><button type="submit" class="w-full h-11 rounded-xl bg-blue-600 text-white text-sm font-semibold">Cadastrar</button></form></div></div>
+  <div id="modal-bank-tx" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"><div class="absolute inset-0 modal-backdrop" data-close-modal="modal-bank-tx"></div><div class="relative w-full sm:max-w-md card rounded-t-3xl sm:rounded-2xl p-5 space-y-3"><div class="flex justify-between items-center"><h3 class="text-sm font-bold">Movimentação em conta</h3><button type="button" data-close-modal="modal-bank-tx"><i data-lucide="x" class="w-4 h-4 text-zinc-400"></i></button></div><form id="form-bank-tx" class="space-y-3"><div class="grid grid-cols-2 gap-2"><select id="btx-type" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-xs"><option value="income">Entrada extra</option><option value="expense">Despesa conta</option></select><input id="btx-amount" type="number" step="0.01" min="0.01" required placeholder="Valor R$" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-sm font-bold" /></div><input id="btx-desc" type="text" required placeholder="Descrição" class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-sm" /><select id="btx-acc" class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-xs"></select><button type="submit" class="w-full h-11 rounded-xl bg-emerald-600 text-white text-sm font-semibold">Salvar</button></form></div></div>
+  <div id="modal-salary" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"><div class="absolute inset-0 modal-backdrop" data-close-modal="modal-salary"></div><div class="relative w-full sm:max-w-md card rounded-t-3xl sm:rounded-2xl p-5 space-y-3"><div class="flex justify-between items-center"><h3 class="text-sm font-bold">Nova renda fixa</h3><button type="button" data-close-modal="modal-salary"><i data-lucide="x" class="w-4 h-4 text-zinc-400"></i></button></div><form id="form-salary" class="space-y-3"><input id="sal-title" type="text" required placeholder="Fonte" class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-sm" /><div class="grid grid-cols-2 gap-2"><input id="sal-amount" type="number" step="0.01" min="1" required placeholder="Valor R$" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-sm font-bold" /><input id="sal-day" type="number" min="1" max="31" value="5" required class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-sm" /></div><select id="sal-acc" class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-xs"></select><button type="submit" class="w-full h-11 rounded-xl bg-blue-600 text-white text-sm font-semibold">Salvar</button></form></div></div>
+  <div id="modal-inv" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"><div class="absolute inset-0 modal-backdrop" data-close-modal="modal-inv"></div><div class="relative w-full sm:max-w-md card rounded-t-3xl sm:rounded-2xl p-5 space-y-3"><div class="flex justify-between items-center"><h3 class="text-sm font-bold">Novo investimento</h3><button type="button" data-close-modal="modal-inv"><i data-lucide="x" class="w-4 h-4 text-zinc-400"></i></button></div><form id="form-inv" class="space-y-3"><input id="inv-name" type="text" required placeholder="Ativo" class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-sm" /><div class="grid grid-cols-2 gap-2"><select id="inv-rt" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-xs"><option value="CDI">% do CDI</option><option value="IPCA">IPCA + %</option><option value="PRE">Pré % a.a.</option></select><input id="inv-rv" type="number" step="0.05" value="100" required class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-sm font-bold" /></div><div class="grid grid-cols-2 gap-2"><input id="inv-gr" type="number" step="0.01" min="0" required placeholder="Saldo bruto R$" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-sm font-bold" /><label class="flex items-center gap-2 text-xs"><input id="inv-tf" type="checkbox" class="rounded" /><span>Isento IR</span></label></div><button type="submit" class="w-full h-11 rounded-xl bg-blue-600 text-white text-sm font-semibold">Salvar</button></form></div></div>
+  <div id="modal-cap" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"><div class="absolute inset-0 modal-backdrop" data-close-modal="modal-cap"></div><div class="relative w-full sm:max-w-sm card rounded-t-3xl sm:rounded-2xl p-5 space-y-3"><div class="flex justify-between items-center"><h3 class="text-sm font-bold">Teto mensal próprio</h3><button type="button" data-close-modal="modal-cap"><i data-lucide="x" class="w-4 h-4 text-zinc-400"></i></button></div><form id="form-cap" class="space-y-3"><input id="input-cap" type="number" step="100" min="500" required class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-sm font-bold" /><button type="submit" class="w-full h-11 rounded-xl bg-blue-600 text-white text-sm font-semibold">Atualizar</button></form></div></div>
+
+    <div id="cloud-sync-pill" class="no-print fixed top-3 right-3 z-40 hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border hairline bg-white/85 dark:bg-[#141418]/85 backdrop-blur shadow-sm">
+    <span id="cloud-sync-dot" class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>
+    <span id="cloud-sync-text">Conectando...</span>
+    <button id="btn-cloud-logout" type="button" class="hidden ml-1 pl-1.5 border-l hairline text-zinc-400 hover:text-rose-500">Sair</button>
+  </div>
+
+  <div id="cloud-auth-gate" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4 bg-zinc-950/85 backdrop-blur-md">
+    <div class="w-full max-w-sm card rounded-2xl p-6 shadow-2xl space-y-4">
+      <div>
+        <p class="text-[11px] uppercase tracking-wider font-semibold text-blue-500">Finanças Pessoais · Nuvem D1</p>
+        <h2 class="text-lg font-bold mt-1">Entrar no painel</h2>
+        <p class="text-xs text-zinc-400 mt-0.5">Acesso protegido pela senha configurada na Cloudflare.</p>
+      </div>
+      <form id="cloud-auth-form" class="space-y-3">
+        <div>
+          <label for="cloud-auth-password" class="block text-xs font-medium mb-1">Senha</label>
+          <input id="cloud-auth-password" type="password" required autocomplete="current-password" placeholder="Digite sua senha" class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-sm" />
+        </div>
+        <div>
+          <label for="cloud-auth-device" class="block text-xs font-medium mb-1">Dispositivo</label>
+          <input id="cloud-auth-device" type="text" value="Meu navegador" maxlength="80" class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-sm" />
+        </div>
+        <p id="cloud-auth-error" class="hidden text-xs font-medium text-rose-500"></p>
+        <button type="submit" class="w-full h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">Entrar</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="no-print fixed bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 hidden rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-4 py-2 text-xs font-semibold shadow-xl"><span id="toast-msg">OK</span></div>
+
+  <script>
+    (function () {
+      const STORAGE_KEY = 'fincontrol_saffron_orb_v7';
+      const MONTHS = ['2026-10', '2026-11', '2026-12', '2027-01', '2027-02'];
+      const MONTH_NAMES = { '2026-10': 'Outubro 2026', '2026-11': 'Novembro 2026', '2026-12': 'Dezembro 2026', '2027-01': 'Janeiro 2027', '2027-02': 'Fevereiro 2027' };
+      const CATEGORIES = ['Alimentação', 'Moradia', 'Saúde', 'Educação', 'Transporte', 'Lazer', 'Compras', 'Assinaturas', 'Outros'];
+
+      function addMonths(ym, off) { const [y, m] = ym.split('-').map(Number); const d = new Date(y, m - 1 + off, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }
+      function splitCents(tot, n) { const b = Math.floor(tot / n), r = tot - b * n; return Array.from({ length: n }, (_, i) => b + (i === 0 ? r : 0)); }
+
+      function getDefaultState() {
+        return {
+          theme: 'dark', monthlyBudgetCap: 12000, marketRates: { cdi: 13.65, ipca: 4.50, irRate: 0.175 },
+          accounts: [
+            { id: 'acc_itau', name: 'Itaú Personnalité', balance: 22350.00, color: '#3B82F6' },
+            { id: 'acc_nu', name: 'Conta Nubank', balance: 14820.50, color: '#8B5CF6' },
+            { id: 'acc_cash', name: 'Espécie', balance: 1850.00, color: '#10B981' }
+          ],
+          cards: [
+            { id: 'card_nu', name: 'Nubank Ultravioleta', institution: 'Nubank', last4: '8412', limit: 28000, closeDay: 4, dueDay: 11 },
+            { id: 'card_itau', name: 'Itaú Black', institution: 'Itaú', last4: '3390', limit: 35000, closeDay: 15, dueDay: 22 },
+            { id: 'card_res', name: 'Cartão Reserva', institution: 'Manual', last4: '1044', limit: 8000, closeDay: 10, dueDay: 18 }
+          ],
+          people: [
+            { id: 'p_italo', name: 'Ítalo', role: 'Titular', isOwner: true },
+            { id: 'p_marcelly', name: 'Marcelly', role: 'Dependente', isOwner: false },
+            { id: 'p_palace', name: 'Açougue', role: 'Negócio', isOwner: false },
+            { id: 'p_sogra', name: 'Sogra', role: 'Família', isOwner: false }
+          ],
+          cardPurchases: [
+            { id: 'cp_01', cardId: 'card_nu', date: '2026-11-08', startMonth: '2026-11', description: 'Supermercado Zona Sul', category: 'Alimentação', totalCents: 120000, installments: 1, splits: [{ personId: 'p_italo', cents: 80000 }, { personId: 'p_sogra', cents: 40000 }] },
+            { id: 'cp_02', cardId: 'card_nu', date: '2026-11-10', startMonth: '2026-11', description: 'Shopping Barra — Roupas', category: 'Compras', totalCents: 90000, installments: 3, splits: [{ personId: 'p_marcelly', cents: 90000 }] },
+            { id: 'cp_03', cardId: 'card_itau', date: '2026-11-12', startMonth: '2026-11', description: 'Embalagens Açougue', category: 'Compras', totalCents: 240000, installments: 4, splits: [{ personId: 'p_palace', cents: 240000 }] },
+            { id: 'cp_04', cardId: 'card_nu', date: '2026-11-14', startMonth: '2026-11', description: 'Drogaria Venancio', category: 'Saúde', totalCents: 46000, installments: 2, splits: [{ personId: 'p_sogra', cents: 46000 }] },
+            { id: 'cp_05', cardId: 'card_itau', date: '2026-11-16', startMonth: '2026-11', description: 'Jantar em Família', category: 'Lazer', totalCents: 60000, installments: 1, splits: [{ personId: 'p_italo', cents: 30000 }, { personId: 'p_marcelly', cents: 30000 }] },
+            { id: 'cp_06', cardId: 'card_res', date: '2026-11-17', startMonth: '2026-11', description: 'Posto Ipiranga', category: 'Transporte', totalCents: 35000, installments: 1, splits: [{ personId: 'p_italo', cents: 35000 }] }
+          ],
+          personEvents: [
+            { id: 'ev_01', personId: 'p_sogra', month: '2026-11', type: 'repayment', cents: 30000, date: '2026-11-15', accountId: 'acc_nu', note: 'Pix parcial do mercado' },
+            { id: 'ev_02', personId: 'p_palace', month: '2026-11', type: 'advance', cents: 40000, date: '2026-11-14', accountId: 'acc_itau', note: 'Adiantamento caixa loja' },
+            { id: 'ev_03', personId: 'p_marcelly', month: '2026-11', type: 'refund', cents: 8500, date: '2026-11-18', accountId: null, note: 'Estorno peça devolvida' }
+          ],
+          fixedIncomes: [
+            { id: 'fi_01', title: 'Pró-labore Palace Carnes', amount: 15000, payDay: 5, accountId: 'acc_itau', receivedMonths: { '2026-11': true } },
+            { id: 'fi_02', title: 'Retirada Multi Frutti', amount: 3500, payDay: 10, accountId: 'acc_itau', receivedMonths: { '2026-11': true } }
+          ],
+          bankTransactions: [
+            { id: 'bt_01', date: '2026-11-05', description: 'Pró-labore Palace Carnes', type: 'income', category: 'Salário', accountId: 'acc_itau', amount: 15000 },
+            { id: 'bt_02', date: '2026-11-10', description: 'Retirada Multi Frutti', type: 'income', category: 'Salário', accountId: 'acc_itau', amount: 3500 },
+            { id: 'bt_03', date: '2026-11-12', description: 'Honorários Advocatícios', type: 'income', category: 'Extra', accountId: 'acc_nu', amount: 6400 },
+            { id: 'bt_04', date: '2026-11-06', description: 'Condomínio e IPTU', type: 'expense', category: 'Moradia', accountId: 'acc_itau', amount: 1980 },
+            { id: 'bt_05', date: '2026-11-10', description: 'Plano de Saúde Familiar', type: 'expense', category: 'Saúde', accountId: 'acc_itau', amount: 2390 },
+            { id: 'bt_06', date: '2026-11-14', description: 'Escola Infantil', type: 'expense', category: 'Educação', accountId: 'acc_itau', amount: 1850 }
+          ],
+          investments: [
+            { id: 'inv_01', name: 'Caixinha Reserva (CDB)', rateType: 'CDI', rateVal: 100, taxFree: false, gross: 49860.40 },
+            { id: 'inv_02', name: 'CDB Itaú 2028', rateType: 'CDI', rateVal: 108, taxFree: false, gross: 67420.00 },
+            { id: 'inv_03', name: 'LCI Liquidez 90d', rateType: 'CDI', rateVal: 93, taxFree: true, gross: 26900.00 },
+            { id: 'inv_04', name: 'Tesouro IPCA+ 2035', rateType: 'IPCA', rateVal: 6.45, taxFree: false, gross: 39180.50 }
+          ]
+        };
+      }
+
+      function loadState() { try { const r = localStorage.getItem(STORAGE_KEY); if (r) { const p = JSON.parse(r); if (p && Array.isArray(p.cardPurchases)) return p; } } catch (e) {} return getDefaultState(); }
+      function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {} if (window.FinancasCloud) window.FinancasCloud.scheduleSave(state); }
+
+      let state = loadState();
+      let currentView = 'dashboard';
+      let selectedCardId = state.cards[0].id;
+      let selectedPersonId = state.people.find((p) => !p.isOwner)?.id || state.people[0].id;
+      let toastTimer = null;
+
+      const fmtBRL = (v) => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      const fmtCents = (c) => fmtBRL((Number(c) || 0) / 100);
+      const fmtDate = (iso) => iso && iso.length >= 10 ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '-';
+      const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      const getMonth = () => document.getElementById('global-month-filter').value;
+      const getPerson = (id) => state.people.find((p) => p.id === id) || { id, name: 'Pessoa', role: '' };
+      const getCard = (id) => state.cards.find((c) => c.id === id) || { id, name: 'Cartão', last4: '0000' };
+      const getAccount = (id) => state.accounts.find((a) => a.id === id) || { id, name: 'Conta' };
+
+      function showToast(msg) { const t = document.getElementById('toast'); document.getElementById('toast-msg').textContent = msg; t.classList.remove('hidden'); if (toastTimer) clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.add('hidden'), 2600); }
+      function copyText(txt) { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => showToast('Resumo copiado.')).catch(() => fallbackCopy(txt)); else fallbackCopy(txt); }
+      function fallbackCopy(txt) { const ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); showToast('Resumo copiado.'); } catch (e) {} document.body.removeChild(ta); }
+
+      function getMonthInstallments(monthKey) {
+        const rows = [];
+        state.cardPurchases.forEach((cp) => {
+          const n = Math.max(1, Number(cp.installments) || 1);
+          const parts = splitCents(cp.totalCents, n);
+          for (let i = 0; i < n; i++) {
+            if (addMonths(cp.startMonth, i) !== monthKey) continue;
+            const instCents = parts[i];
+            const splits = []; let alloc = 0;
+            cp.splits.forEach((sp, idx) => {
+              const s = idx === cp.splits.length - 1 ? instCents - alloc : Math.round((instCents * sp.cents) / cp.totalCents);
+              alloc += s; splits.push({ personId: sp.personId, cents: s });
+            });
+            rows.push({ purchaseId: cp.id, cardId: cp.cardId, date: cp.date, description: cp.description, category: cp.category, installmentNumber: i + 1, installmentsTotal: n, fullCents: instCents, splits });
+          }
+        });
+        return rows;
+      }
+
+      function computePersonLedger(pid, mKey) {
+        const mRows = getMonthInstallments(mKey);
+        const items = []; let spot = 0, inst = 0;
+        mRows.forEach((r) => {
+          const sp = r.splits.find((x) => x.personId === pid);
+          if (sp && sp.cents > 0) { if (r.installmentsTotal > 1) inst += sp.cents; else spot += sp.cents; items.push({ ...r, personCents: sp.cents, isSplit: r.splits.length > 1 }); }
+        });
+        const events = state.personEvents.filter((e) => e.personId === pid && e.month === mKey);
+        const refunds = events.filter((e) => e.type === 'refund').reduce((s, e) => s + e.cents, 0);
+        const received = events.filter((e) => e.type === 'repayment' || e.type === 'advance').reduce((s, e) => s + e.cents, 0);
+        const charge = Math.max(0, spot + inst - refunds);
+        return { items, events, spot, inst, refunds, charge, received, remaining: charge - received };
+      }
+
+      function computeInvProj(inv) {
+        const cdi = Number(state.marketRates.cdi) || 13.65, ipca = Number(state.marketRates.ipca) || 4.50;
+        const ir = inv.taxFree ? 0 : (Number(state.marketRates.irRate) || 0.175);
+        const ann = inv.rateType === 'CDI' ? cdi * (inv.rateVal / 100) : (inv.rateType === 'IPCA' ? ((1 + ipca / 100) * (1 + inv.rateVal / 100) - 1) * 100 : Number(inv.rateVal) || 0);
+        return { ann, monthNet: inv.gross * (Math.pow(1 + ann / 100, 1 / 12) - 1) * (1 - ir), yearNet: inv.gross * (ann / 100) * (1 - ir) };
+      }
+
+      function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+      function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+      function setView(v) {
+        currentView = v;
+        ['dashboard', 'cards', 'transactions', 'investments', 'pluggy'].forEach((id) => document.getElementById(`view-${id}`).classList.toggle('hidden', id !== v));
+        document.querySelectorAll('[data-view]').forEach((b) => b.classList.toggle('active', b.dataset.view === v));
+        const titles = { dashboard: 'Resumo geral', cards: 'Cartões e rateio', transactions: 'Extrato e salários', investments: 'Investimentos', pluggy: 'Pessoas e ajustes' };
+        document.getElementById('page-heading').textContent = titles[v] || 'Resumo geral';
+        document.getElementById('crumb-label').textContent = titles[v] || 'Resumo geral';
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        renderAll();
+      }
+
+      function renderSidebar() {
+        const mKey = getMonth(), mRows = getMonthInstallments(mKey);
+        document.getElementById('side-cnt-cards').textContent = String(mRows.length);
+        const others = state.people.filter((p) => !p.isOwner);
+        const colors = ['#3B82F6', '#8B5CF6', '#F59E0B', '#10B981'];
+        let openCnt = 0;
+        document.getElementById('side-people-rows').innerHTML = others.map((p, i) => {
+          const l = computePersonLedger(p.id, mKey);
+          if (l.remaining > 0) openCnt++;
+          return `<button type="button" data-open-person="${esc(p.id)}" class="w-full flex items-center justify-between py-0.5 text-left hover:opacity-80"><span class="flex items-center gap-1.5 truncate"><span class="w-1.5 h-1.5 rounded-full" style="background:${colors[i % 4]}"></span><span class="truncate">${esc(p.name)}</span></span><span class="font-semibold tabular-nums ${l.remaining > 0 ? 'text-amber-500' : 'text-emerald-500'}">${fmtCents(l.remaining)}</span></button>`;
+        }).join('');
+        document.getElementById('side-people-open').textContent = `${openCnt} abertas`;
+      }
+
+      function renderDashboard() {
+        const mKey = getMonth(), mRows = getMonthInstallments(mKey);
+        const cash = state.accounts.reduce((s, a) => s + a.balance, 0);
+        const fullBill = mRows.reduce((s, r) => s + r.fullCents, 0);
+        const ownCard = mRows.reduce((s, r) => s + (r.splits.find((x) => x.personId === 'p_italo')?.cents || 0), 0);
+        const thirdCard = fullBill - ownCard;
+        const bankExp = state.bankTransactions.filter((t) => t.type === 'expense' && t.date.startsWith(mKey)).reduce((s, t) => s + t.amount, 0);
+        const ownTotal = bankExp + ownCard / 100;
+
+        // Card 1: Cash + Mini Donut
+        document.getElementById('kpi-cash').textContent = fmtBRL(cash);
+        const topAcc = state.accounts[0] || { name: 'Conta', balance: 0 };
+        const topPct = cash > 0 ? Math.round((topAcc.balance / cash) * 100) : 0;
+        document.getElementById('ring-acc-pct').textContent = `${topPct}%`;
+        document.getElementById('ring-acc-main').setAttribute('stroke-dashoffset', (150.8 * (1 - topPct / 100)).toFixed(1));
+        document.getElementById('kpi-acc-breakdown').innerHTML = state.accounts.map((a) => {
+          const pct = cash > 0 ? Math.round((a.balance / cash) * 100) : 0;
+          return `<div class="flex items-center justify-between"><span class="flex items-center gap-2 text-zinc-500 dark:text-zinc-400"><span class="w-1.5 h-1.5 rounded-full" style="background:${a.color || '#3B82F6'}"></span>${esc(a.name)}</span><span class="font-semibold tabular-nums">${pct}%</span></div>`;
+        }).join('');
+
+        // Card 2: Full Bill + Purple/White Segmented Bar
+        document.getElementById('kpi-bill').textContent = fmtCents(fullBill);
+        document.getElementById('kpi-bill-sub').textContent = `${mRows.length} item(ns) · 100% obrigação`;
+        const pOwnBill = fullBill > 0 ? Math.round((ownCard / fullBill) * 100) : 0;
+        const pThirdBill = Math.max(0, 100 - pOwnBill);
+        document.getElementById('bill-range-bar').innerHTML = `<div style="width:${pOwnBill}%" class="bg-violet-500 h-full"></div><div style="width:${pThirdBill}%" class="bg-blue-500 h-full"></div>`;
+        document.getElementById('bill-range-labels').innerHTML = `<span>Seu: ${fmtCents(ownCard)}</span><span>Terceiros: ${fmtCents(thirdCard)}</span>`;
+
+        // Card 3: Receivables + Orange Segmented Bar
+        const others = state.people.filter((p) => !p.isOwner).map((p) => ({ p, l: computePersonLedger(p.id, mKey) }));
+        const totalRec = others.reduce((s, x) => s + Math.max(0, x.l.remaining), 0);
+        document.getElementById('kpi-rec').textContent = fmtCents(totalRec);
+        const segColors = ['#F97316', '#3B82F6', '#A855F7', '#10B981'];
+        document.getElementById('rec-seg-bar').innerHTML = others.map((x, i) => {
+          const w = totalRec > 0 ? Math.max(6, Math.round((Math.max(0, x.l.remaining) / totalRec) * 100)) : 33;
+          return `<div style="width:${w}%;background:${segColors[i % 4]}" class="h-full rounded-full"></div>`;
+        }).join('');
+        document.getElementById('rec-people-mini').innerHTML = others.map((x, i) => `
+          <div data-open-person="${esc(x.p.id)}" class="flex items-center justify-between cursor-pointer hover:opacity-80">
+            <span class="flex items-center gap-2 text-zinc-500 dark:text-zinc-400"><span class="w-1.5 h-1.5 rounded-full" style="background:${segColors[i % 4]}"></span>${esc(x.p.name)}</span>
+            <span class="font-semibold tabular-nums">${fmtCents(x.l.remaining)}</span>
+          </div>
+        `).join('');
+
+        // Middle Left: Saffron Margin vs Goal Bar Chart (7 categories/buckets vs goal line)
+        const cap = Number(state.monthlyBudgetCap) || 12000;
+        const capPct = Math.round((ownTotal / cap) * 100);
+        document.getElementById('goal-own-val').textContent = fmtBRL(ownTotal);
+        document.getElementById('goal-cap-txt').textContent = `de ${fmtBRL(cap)}`;
+        document.getElementById('goal-pct-badge').textContent = `${capPct}% do teto`;
+
+        const buckets = [
+          { lbl: 'Moradia', val: 1980 }, { lbl: 'Saúde', val: 2390 }, { lbl: 'Educ.', val: 1850 },
+          { lbl: 'Alim.', val: ownCard > 0 ? 800 : 0, hi: true }, { lbl: 'Transp.', val: 350 },
+          { lbl: 'Lazer', val: 300 }, { lbl: 'Outros', val: 150 }
+        ];
+        const maxB = Math.max(1, ...buckets.map((b) => b.val));
+        document.getElementById('saffron-bars').innerHTML = buckets.map((b) => {
+          const h = Math.max(14, Math.round((b.val / maxB) * 100));
+          return `
+            <div class="flex flex-col items-center gap-1.5 h-full justify-end">
+              ${b.hi ? `<span class="px-1.5 py-0.5 rounded-md bg-white dark:bg-white text-zinc-900 text-[9px] font-bold shadow-sm whitespace-nowrap">${fmtBRL(b.val)}</span>` : ''}
+              <div style="height:${h}%" class="w-full max-w-[28px] rounded-t-md ${b.hi ? 'bg-blue-500 shadow-md shadow-blue-500/30' : 'bg-zinc-200 dark:bg-zinc-800'} transition-all"></div>
+              <span class="text-[10px] text-zinc-400 truncate max-w-full">${b.lbl}</span>
+            </div>
+          `;
+        }).join('');
+
+        // Middle Right: Third-party horizontal bars (Saffron "Food waste" style)
+        document.getElementById('third-tot-val').textContent = fmtCents(thirdCard);
+        document.getElementById('third-tot-sub').textContent = `${others.length} pessoas rastreadas`;
+        const maxP = Math.max(1, ...others.map((x) => x.l.charge));
+        document.getElementById('saffron-people-bars').innerHTML = others.map((x, i) => {
+          const w = Math.max(8, Math.round((x.l.charge / maxP) * 100));
+          return `
+            <div data-open-person="${esc(x.p.id)}" class="flex items-center gap-3 text-xs cursor-pointer hover:opacity-80">
+              <span class="w-16 truncate text-zinc-500 dark:text-zinc-400">${esc(x.p.name)}</span>
+              <div class="flex-1 h-2 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden"><div style="width:${w}%;background:${segColors[i % 4]}" class="h-full rounded-full"></div></div>
+              <span class="w-20 text-right font-semibold tabular-nums">${fmtCents(x.l.charge)}</span>
+            </div>
+          `;
+        }).join('');
+
+        const totInvM = state.investments.reduce((s, inv) => s + computeInvProj(inv).monthNet, 0);
+        document.getElementById('dash-cdi-val').textContent = `${Number(state.marketRates.cdi).toFixed(2).replace('.', ',')}%`;
+        document.getElementById('dash-inv-m').textContent = `+${fmtBRL(totInvM)}`;
+
+        // Bottom: Saffron "Top Dishes" -> Principais Compras no Cartão
+        const q = (document.getElementById('global-search')?.value || '').trim().toLowerCase();
+        const topP = [...mRows].filter((r) => !q || r.description.toLowerCase().includes(q) || r.splits.some((s) => getPerson(s.personId).name.toLowerCase().includes(q))).sort((a, b) => b.fullCents - a.fullCents).slice(0, 5);
+        document.getElementById('saffron-top-purchases').innerHTML = topP.length ? topP.map((r) => {
+          const share = fullBill > 0 ? ((r.fullCents / fullBill) * 100).toFixed(1) : '0.0';
+          return `
+            <div data-edit-purchase="${esc(r.purchaseId)}" class="px-5 py-3.5 flex items-center justify-between gap-3 hover:bg-zinc-50 dark:hover:bg-white/5 cursor-pointer transition text-xs">
+              <div class="flex items-center gap-3 min-w-0">
+                <span class="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 font-bold flex items-center justify-center shrink-0">${esc(getPerson(r.splits[0]?.personId).name.charAt(0))}</span>
+                <div class="min-w-0">
+                  <div class="font-semibold truncate">${esc(r.description)}</div>
+                  <div class="text-[11px] text-zinc-400 truncate">${esc(getCard(r.cardId).name)} · ${r.splits.map((s) => esc(getPerson(s.personId).name)).join(', ')}</div>
+                </div>
+              </div>
+              <div class="hidden sm:flex items-center gap-2 w-28">
+                <div class="flex-1 h-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden"><div style="width:${Math.min(100, Number(share) * 2)}%" class="h-full bg-emerald-500 rounded-full"></div></div>
+                <span class="text-[11px] text-zinc-400 w-10 text-right">${share}%</span>
+              </div>
+              <div class="text-right shrink-0">
+                <div class="font-bold tabular-nums">${fmtCents(r.fullCents)}</div>
+                <div class="text-[10px] ${r.splits.length > 1 ? 'text-blue-500' : 'text-zinc-400'}">${r.splits.length > 1 ? 'Dividida' : (r.installmentsTotal > 1 ? `${r.installmentNumber}/${r.installmentsTotal}` : 'À vista')}</div>
+              </div>
+            </div>
+          `;
+        }).join('') : '<div class="p-6 text-center text-xs text-zinc-400">Nenhuma compra encontrada.</div>';
+      }
+
+      function renderCardsView() {
+        const mKey = getMonth(), mRows = getMonthInstallments(mKey);
+        document.getElementById('cards-strip').innerHTML = state.cards.map((c) => {
+          const full = mRows.filter((r) => r.cardId === c.id).reduce((s, r) => s + r.fullCents, 0);
+          const sel = c.id === selectedCardId ? 'border-blue-500 ring-1 ring-blue-500' : 'hairline';
+          return `<button type="button" data-select-card="${esc(c.id)}" class="shrink-0 w-56 p-4 rounded-2xl border ${sel} card text-left transition"><div class="flex justify-between text-xs text-zinc-400"><span>${esc(c.institution)}</span><span>••${esc(c.last4)}</span></div><div class="text-sm font-bold mt-1 truncate">${esc(c.name)}</div><div class="text-lg font-bold tabular-nums mt-2">${fmtCents(full)}</div><div class="text-[10px] text-zinc-400 mt-0.5">Fatura integral · Vence dia ${c.dueDay}</div></button>`;
+        }).join('');
+
+        if (!state.people.some((p) => p.id === selectedPersonId)) selectedPersonId = state.people[0].id;
+        document.getElementById('person-pills').innerHTML = state.people.map((p) => {
+          const l = computePersonLedger(p.id, mKey);
+          const on = p.id === selectedPersonId ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 border-zinc-900' : 'border hairline text-zinc-500';
+          return `<button type="button" data-select-person="${esc(p.id)}" class="shrink-0 px-3.5 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-2 ${on}"><span>${esc(p.name)}</span><span class="opacity-75 tabular-nums">${fmtCents(l.remaining)}</span></button>`;
+        }).join('');
+
+        const led = computePersonLedger(selectedPersonId, mKey);
+        document.getElementById('p-spot').textContent = fmtCents(led.spot);
+        document.getElementById('p-inst').textContent = fmtCents(led.inst);
+        document.getElementById('p-charge').textContent = fmtCents(led.charge);
+        document.getElementById('p-rec').textContent = fmtCents(led.received);
+        document.getElementById('p-bal').textContent = led.remaining < 0 ? `Crédito ${fmtCents(-led.remaining)}` : fmtCents(led.remaining);
+
+        document.getElementById('p-items-list').innerHTML = led.items.length ? led.items.map((it) => `<div data-edit-purchase="${esc(it.purchaseId)}" class="p-3 flex items-center justify-between gap-2 hover:bg-zinc-50 dark:hover:bg-white/5 cursor-pointer text-xs"><div class="min-w-0"><div class="font-semibold truncate">${esc(it.description)}</div><div class="text-[11px] text-zinc-400">${fmtDate(it.date)} · ${it.installmentsTotal > 1 ? `${it.installmentNumber}/${it.installmentsTotal}` : 'À vista'}${it.isSplit ? ' · Dividida' : ''}</div></div><div class="font-bold tabular-nums shrink-0">${fmtCents(it.personCents)}</div></div>`).join('') : '<div class="p-4 text-center text-xs text-zinc-400">Sem itens neste mês.</div>';
+
+        const evLbl = { repayment: ['Recebimento', 'bg-emerald-500/15 text-emerald-500'], advance: ['Adiantamento', 'bg-blue-500/15 text-blue-500'], refund: ['Estorno', 'bg-amber-500/15 text-amber-500'] };
+        document.getElementById('p-events-list').innerHTML = led.events.length ? led.events.map((ev) => {
+          const [lb, cl] = evLbl[ev.type] || ['Acerto', 'bg-zinc-500/15 text-zinc-400'];
+          return `<div class="p-3 flex items-center justify-between gap-2 text-xs"><div class="min-w-0"><span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${cl}">${lb}</span><div class="text-zinc-400 mt-1 truncate">${esc(ev.note || fmtDate(ev.date))}</div></div><div class="text-right shrink-0"><div class="font-bold text-emerald-500 tabular-nums">-${fmtCents(ev.cents)}</div><button type="button" data-del-ev="${esc(ev.id)}" class="text-[10px] text-rose-500">Remover</button></div></div>`;
+        }).join('') : '<div class="p-4 text-center text-xs text-zinc-400">Sem acertos registrados.</div>';
+
+        const card = getCard(selectedCardId), cRows = mRows.filter((r) => r.cardId === selectedCardId);
+        document.getElementById('bill-title').textContent = `Fatura integral — ${card.name} (${fmtCents(cRows.reduce((s, r) => s + r.fullCents, 0))})`;
+        document.getElementById('bill-rows').innerHTML = cRows.length ? cRows.map((r) => `<div data-edit-purchase="${esc(r.purchaseId)}" class="px-5 py-3 flex items-center justify-between gap-3 hover:bg-zinc-50 dark:hover:bg-white/5 cursor-pointer text-xs"><div class="min-w-0"><div class="font-semibold truncate">${esc(r.description)}</div><div class="flex flex-wrap gap-1 mt-1">${r.splits.map((s) => `<span class="px-2 py-0.5 rounded-full text-[10px] bg-zinc-100 dark:bg-zinc-800">${esc(getPerson(s.personId).name)}: ${fmtCents(s.cents)}</span>`).join('')}</div></div><div class="text-right shrink-0"><div class="font-bold tabular-nums">${fmtCents(r.fullCents)}</div><div class="text-[10px] text-zinc-400">${r.installmentsTotal > 1 ? `${r.installmentNumber}/${r.installmentsTotal}` : 'À vista'}</div></div></div>`).join('') : '<div class="p-6 text-center text-xs text-zinc-400">Sem compras neste cartão.</div>';
+      }
+
+      function renderTransactionsView() {
+        const mKey = getMonth();
+        document.getElementById('sal-rows').innerHTML = state.fixedIncomes.map((fi) => {
+          const rec = Boolean(fi.receivedMonths && fi.receivedMonths[mKey]);
+          return `<div class="px-5 py-3 flex items-center justify-between text-xs"><div><div class="font-semibold">${esc(fi.title)}</div><div class="text-[11px] text-zinc-400">Dia ${fi.payDay} · ${esc(getAccount(fi.accountId).name)}</div></div><div class="flex items-center gap-2"><span class="font-bold tabular-nums">${fmtBRL(fi.amount)}</span>${rec ? '<span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 text-[10px] font-semibold">Recebido</span>' : `<button type="button" data-confirm-sal="${esc(fi.id)}" class="px-2.5 py-1 rounded-full bg-emerald-600 text-white text-[11px] font-semibold">Confirmar</button>`}</div></div>`;
+        }).join('');
+        const list = state.bankTransactions.filter((t) => t.date.startsWith(mKey)).sort((a, b) => b.date.localeCompare(a.date));
+        document.getElementById('btx-count').textContent = `${list.length} itens`;
+        document.getElementById('btx-rows').innerHTML = list.map((t) => `<div class="px-5 py-3 flex items-center justify-between text-xs"><div><div class="font-semibold">${esc(t.description)}</div><div class="text-[11px] text-zinc-400">${fmtDate(t.date)} · ${esc(getAccount(t.accountId).name)}</div></div><span class="font-bold tabular-nums ${t.type === 'income' ? 'text-emerald-500' : (t.type === 'reimbursement_in' ? 'text-blue-500' : 'text-rose-500')}">${(t.type === 'income' || t.type === 'reimbursement_in') ? '+' : '-'}${fmtBRL(t.amount)}</span></div>`).join('') || '<div class="p-6 text-center text-xs text-zinc-400">Sem movimentações.</div>';
+      }
+
+      function renderInvestmentsView() {
+        document.getElementById('rate-cdi').value = state.marketRates.cdi;
+        document.getElementById('rate-ipca').value = state.marketRates.ipca;
+        document.getElementById('rate-ir').value = String(state.marketRates.irRate);
+        let tg = 0, tm = 0;
+        document.getElementById('inv-rows').innerHTML = state.investments.map((inv) => {
+          const pr = computeInvProj(inv); tg += inv.gross; tm += pr.monthNet;
+          return `<div class="px-5 py-3.5 flex items-center justify-between text-xs"><div><div class="font-semibold">${esc(inv.name)}</div><div class="text-[11px] text-zinc-400">${inv.rateType === 'CDI' ? inv.rateVal + '% CDI' : inv.rateType + ' ' + inv.rateVal + '%'} (${pr.ann.toFixed(2).replace('.', ',')}% a.a.)${inv.taxFree ? ' · Isento' : ''}</div></div><div class="text-right"><div class="font-bold tabular-nums">${fmtBRL(inv.gross)}</div><div class="text-[11px] font-semibold text-emerald-500">+${fmtBRL(pr.monthNet)}/mês</div></div></div>`;
+        }).join('');
+        document.getElementById('inv-gross-tot').textContent = fmtBRL(tg);
+        document.getElementById('inv-month-tot').textContent = `+${fmtBRL(tm)}/mês`;
+      }
+
+      function renderPluggyView() {
+        document.getElementById('cfg-people-rows').innerHTML = state.people.map((p) => `<div class="px-5 py-3 flex items-center justify-between text-xs"><div><div class="font-semibold">${esc(p.name)}</div><div class="text-[11px] text-zinc-400">${esc(p.role)}</div></div>${!p.isOwner ? `<button type="button" data-del-person="${esc(p.id)}" class="text-rose-500 font-semibold">Remover</button>` : '<span class="text-zinc-400">Titular</span>'}</div>`).join('');
+      }
+
+      function renderAll() {
+        document.documentElement.classList.toggle('dark', state.theme === 'dark');
+        renderSidebar();
+        if (currentView === 'dashboard') renderDashboard();
+        if (currentView === 'cards') renderCardsView();
+        if (currentView === 'transactions') renderTransactionsView();
+        if (currentView === 'investments') renderInvestmentsView();
+        if (currentView === 'pluggy') renderPluggyView();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+      }
+
+      function populateSelects() {
+        document.getElementById('pur-card').innerHTML = state.cards.map((c) => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+        document.getElementById('pur-cat').innerHTML = CATEGORIES.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+        const accs = state.accounts.map((a) => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('');
+        document.getElementById('btx-acc').innerHTML = accs; document.getElementById('sal-acc').innerHTML = accs;
+        document.getElementById('set-account').innerHTML = '<option value="">Não movimentar conta</option>' + accs;
+        document.getElementById('set-person').innerHTML = state.people.filter((p) => !p.isOwner).map((p) => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
+      }
+      function addSplitRow(pid, val) {
+        const cont = document.getElementById('split-rows'), row = document.createElement('div');
+        row.className = 'flex items-center gap-2 sp-row';
+        row.innerHTML = `<select class="sp-p flex-1 h-9 px-2 rounded-lg border hairline bg-white dark:bg-[#161619] text-xs">${state.people.map((p) => `<option value="${esc(p.id)}" ${p.id === pid ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select><input type="number" step="0.01" min="0" value="${Number(val || 0).toFixed(2)}" class="sp-v w-24 h-9 px-2 rounded-lg border hairline bg-white dark:bg-[#161619] text-xs font-bold text-right" /><button type="button" class="rm-sp p-1.5 text-zinc-400 hover:text-rose-500"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`;
+        cont.appendChild(row); if (typeof lucide !== 'undefined') lucide.createIcons(); updateSpSt();
+      }
+      function updateSpSt() {
+        const tot = Math.round((parseFloat(document.getElementById('pur-total').value) || 0) * 100);
+        let sum = 0; document.querySelectorAll('#split-rows .sp-v').forEach((i) => { sum += Math.round((parseFloat(i.value) || 0) * 100); });
+        const el = document.getElementById('split-st'); el.textContent = `${fmtCents(sum)} / ${fmtCents(tot)}`;
+        el.className = sum === tot && tot > 0 ? 'font-bold text-emerald-500' : 'font-bold text-rose-500';
+      }
+      function openPurchaseModal(eid) {
+        populateSelects(); document.getElementById('form-purchase').reset(); document.getElementById('pur-id').value = '';
+        document.getElementById('pur-date').value = `${getMonth()}-20`; document.getElementById('pur-card').value = selectedCardId;
+        document.getElementById('split-rows').innerHTML = ''; const del = document.getElementById('btn-del-pur');
+        if (eid) {
+          const cp = state.cardPurchases.find((x) => x.id === eid);
+          if (cp) {
+            document.getElementById('modal-pur-title').textContent = 'Editar compra e rateio';
+            document.getElementById('pur-id').value = cp.id; document.getElementById('pur-desc').value = cp.description;
+            document.getElementById('pur-total').value = (cp.totalCents / 100).toFixed(2); document.getElementById('pur-inst').value = cp.installments;
+            document.getElementById('pur-card').value = cp.cardId; document.getElementById('pur-date').value = cp.date; document.getElementById('pur-cat').value = cp.category;
+            cp.splits.forEach((s) => addSplitRow(s.personId, s.cents / 100)); del.classList.remove('hidden'); openModal('modal-purchase'); return;
+          }
+        }
+        document.getElementById('modal-pur-title').textContent = 'Nova compra e rateio'; document.getElementById('pur-total').value = '300.00';
+        del.classList.add('hidden'); addSplitRow(selectedPersonId || 'p_italo', 300); openModal('modal-purchase');
+      }
+      function openShareModal() {
+        const mKey = getMonth(), p = getPerson(selectedPersonId), led = computePersonLedger(selectedPersonId, mKey);
+        document.getElementById('share-text').value = [
+          `Resumo Cartão — ${p.name} (${MONTH_NAMES[mKey] || mKey})`, '',
+          ...(led.items.length ? led.items.map((it) => `- ${fmtDate(it.date)} | ${it.description} (${it.installmentsTotal > 1 ? it.installmentNumber + '/' + it.installmentsTotal : 'à vista'}): ${fmtCents(it.personCents)}`) : ['- Nenhum lançamento']),
+          '', `Total a cobrar: ${fmtCents(led.charge)}`, `Recebido / adiantado: ${fmtCents(led.received)}`,
+          `Saldo restante: ${led.remaining < 0 ? 'Crédito ' + fmtCents(-led.remaining) : fmtCents(led.remaining)}`
+        ].join('\n');
+        openModal('modal-share');
+      }
+      function openSetModal() { populateSelects(); document.getElementById('form-settlement').reset(); document.getElementById('set-date').value = `${getMonth()}-20`; if (selectedPersonId && selectedPersonId !== 'p_italo') document.getElementById('set-person').value = selectedPersonId; openModal('modal-settlement'); }
+
+      // Official WebGL Fluid Orb (swamimalode07/rare-ui)
+      const ORB_COLORS = ['#1A73F2', '#8B5CF6', '#10B981', '#F97316'];
+      let orbIdx = 0, orbRgb = [0.102, 0.451, 0.949];
+      const hexRgb = (hex) => { const n = parseInt(hex.replace('#', ''), 16); return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255]; };
+      function mountOrb(id) {
+        const c = document.getElementById(id); if (!c) return;
+        const gl = c.getContext('webgl', { antialias: true, alpha: true }); if (!gl) return;
+        const V = `attribute vec2 a_pos; void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }`;
+        const F = `#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\nuniform vec2 u_resolution; uniform float u_time; uniform vec3 u_color; float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453123);} float noise(vec2 p){vec2 i=floor(p);vec2 f=fract(p);vec2 u=f*f*(3.0-2.0*f);return mix(mix(hash(i),hash(i+vec2(1.0,0.0)),u.x),mix(hash(i+vec2(0.0,1.0)),hash(i+vec2(1.0,1.0)),u.x),u.y);} float fbm(vec2 p){float v=0.0;float a=0.6;for(int i=0;i<3;i++){v+=a*noise(p);p*=2.0;a*=0.5;}return v;} void main(){vec2 uv=gl_FragCoord.xy/u_resolution.xy;float t=u_time*0.26;vec2 d=vec2(sin(t)+0.6*sin(t*1.7+1.3),cos(t*0.8)+0.6*cos(t*1.3+2.1));vec2 p=vec2(uv.x*1.8,uv.y)+d*0.7;vec2 q=vec2(fbm(p+d),fbm(p+vec2(3.2,1.5)-d));float f=fbm(p+1.2*q);float g=clamp(1.0-uv.y,0.0,1.0);float anc=smoothstep(0.0,0.3,uv.y);float sh=clamp(g+(f-0.5)*0.8*anc,0.0,1.0);vec3 w=vec3(0.99,1.0,1.0);vec3 l=mix(w,u_color,0.5);vec3 col=mix(w,l,smoothstep(0.28,0.52,sh));col=mix(col,u_color,smoothstep(0.58,0.88,sh));float e=smoothstep(0.5,0.49,distance(uv,vec2(0.5)));gl_FragColor=vec4(col*e,e);}`;
+        const cmp = (t, src) => { const s = gl.createShader(t); gl.shaderSource(s, src); gl.compileShader(s); return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null; };
+        const pr = gl.createProgram(), vs = cmp(gl.VERTEX_SHADER, V), fs = cmp(gl.FRAGMENT_SHADER, F);
+        if (!pr || !vs || !fs) return;
+        gl.attachShader(pr, vs); gl.attachShader(pr, fs); gl.linkProgram(pr);
+        if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
+        gl.useProgram(pr);
+        const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
+        const loc = gl.getAttribLocation(pr, 'a_pos'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+        const uR = gl.getUniformLocation(pr, 'u_resolution'), uT = gl.getUniformLocation(pr, 'u_time'), uC = gl.getUniformLocation(pr, 'u_color'), t0 = performance.now();
+        function loop(now) {
+          const w = c.clientWidth, h = c.clientHeight;
+          if (w > 0 && h > 0) {
+            const dpr = Math.min(window.devicePixelRatio || 1, 2), rw = Math.round(w * dpr), rh = Math.round(h * dpr);
+            if (c.width !== rw || c.height !== rh) { c.width = rw; c.height = rh; gl.viewport(0, 0, rw, rh); }
+            gl.uniform2f(uR, rw, rh); gl.uniform1f(uT, (now - t0) / 1000); gl.uniform3f(uC, orbRgb[0], orbRgb[1], orbRgb[2]);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+          }
+          requestAnimationFrame(loop);
+        }
+        requestAnimationFrame(loop);
+      }
+
+      // Events
+      document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
+      document.getElementById('btn-theme-light').addEventListener('click', () => { state.theme = 'light'; saveState(); renderAll(); });
+      document.getElementById('btn-theme-dark').addEventListener('click', () => { state.theme = 'dark'; saveState(); renderAll(); });
+      document.getElementById('global-month-filter').addEventListener('change', renderAll);
+      document.getElementById('global-search').addEventListener('input', () => { if (currentView === 'dashboard') renderDashboard(); });
+      document.getElementById('btn-prev-month').addEventListener('click', () => { const s = document.getElementById('global-month-filter'); const i = MONTHS.indexOf(s.value); if (i > 0) { s.value = MONTHS[i - 1]; renderAll(); } });
+      document.getElementById('btn-next-month').addEventListener('click', () => { const s = document.getElementById('global-month-filter'); const i = MONTHS.indexOf(s.value); if (i >= 0 && i < MONTHS.length - 1) { s.value = MONTHS[i + 1]; renderAll(); } });
+      document.getElementById('btn-quick-sync').addEventListener('click', () => showToast('Pluggy sincronizado sem duplicidades.'));
+      ['btn-top-add', 'btn-card-add-pur'].forEach((id) => document.getElementById(id).addEventListener('click', () => openPurchaseModal(null)));
+      ['btn-quick-set', 'btn-open-set'].forEach((id) => document.getElementById(id).addEventListener('click', openSetModal));
+      ['btn-side-share', 'btn-open-share'].forEach((id) => document.getElementById(id).addEventListener('click', openShareModal));
+      ['btn-orb-side', 'btn-orb-mob'].forEach((id) => document.getElementById(id).addEventListener('click', () => { orbIdx = (orbIdx + 1) % ORB_COLORS.length; orbRgb = hexRgb(ORB_COLORS[orbIdx]); showToast('Cor do Fluid Orb alterada.'); }));
+      document.getElementById('btn-copy-share').addEventListener('click', () => copyText(document.getElementById('share-text').value));
+      document.getElementById('btn-edit-cap').addEventListener('click', () => { document.getElementById('input-cap').value = state.monthlyBudgetCap; openModal('modal-cap'); });
+      document.getElementById('btn-cfg-person').addEventListener('click', () => { document.getElementById('form-person').reset(); openModal('modal-person'); });
+      document.getElementById('btn-add-sal').addEventListener('click', () => { populateSelects(); document.getElementById('form-salary').reset(); openModal('modal-salary'); });
+      document.getElementById('btn-add-btx').addEventListener('click', () => { populateSelects(); document.getElementById('form-bank-tx').reset(); openModal('modal-bank-tx'); });
+      document.getElementById('btn-add-inv').addEventListener('click', () => { document.getElementById('form-inv').reset(); openModal('modal-inv'); });
+      document.getElementById('btn-add-sp').addEventListener('click', () => addSplitRow(state.people[0].id, 0));
+      document.getElementById('btn-split-eq').addEventListener('click', () => { const tot = Math.round((parseFloat(document.getElementById('pur-total').value) || 0) * 100); const ins = Array.from(document.querySelectorAll('#split-rows .sp-v')); if (!ins.length) return; const pts = splitCents(tot, ins.length); ins.forEach((el, i) => { el.value = (pts[i] / 100).toFixed(2); }); updateSpSt(); });
+      document.getElementById('pur-total').addEventListener('input', updateSpSt);
+      document.getElementById('split-rows').addEventListener('input', updateSpSt);
+      document.getElementById('split-rows').addEventListener('click', (e) => { const rm = e.target.closest('.rm-sp'); if (rm && document.querySelectorAll('#split-rows .sp-row').length > 1) { rm.closest('.sp-row').remove(); updateSpSt(); } });
+      document.getElementById('btn-del-pur').addEventListener('click', () => { const id = document.getElementById('pur-id').value; if (!id) return; state.cardPurchases = state.cardPurchases.filter((x) => x.id !== id); saveState(); closeModal('modal-purchase'); renderAll(); showToast('Compra excluída.'); });
+      document.getElementById('btn-pay-bill').addEventListener('click', () => { const m = getMonth(), c = getCard(selectedCardId), full = getMonthInstallments(m).filter((r) => r.cardId === selectedCardId).reduce((s, r) => s + r.fullCents, 0); if (full <= 0) { showToast('Sem fatura em aberto.'); return; } state.bankTransactions.unshift({ id: 'bt_p_' + Date.now(), date: `${m}-20`, description: `Fatura integral ${c.name}`, type: 'bill_payment', category: 'Transferência', accountId: state.accounts[0].id, amount: full / 100 }); state.accounts[0].balance -= full / 100; saveState(); renderAll(); showToast(`Fatura (${fmtCents(full)}) paga sem duplicar despesas.`); });
+      ['rate-cdi', 'rate-ipca', 'rate-ir'].forEach((id) => document.getElementById(id).addEventListener('input', () => { state.marketRates.cdi = parseFloat(document.getElementById('rate-cdi').value) || 13.65; state.marketRates.ipca = parseFloat(document.getElementById('rate-ipca').value) || 4.50; state.marketRates.irRate = parseFloat(document.getElementById('rate-ir').value) || 0.175; saveState(); renderAll(); }));
+
+      document.addEventListener('click', (e) => {
+        const cm = e.target.closest('[data-close-modal]'); if (cm) { closeModal(cm.getAttribute('data-close-modal')); return; }
+        const jmp = e.target.closest('[data-jump]'); if (jmp) { setView(jmp.getAttribute('data-jump')); return; }
+        const op = e.target.closest('[data-open-person]'); if (op) { selectedPersonId = op.getAttribute('data-open-person'); setView('cards'); return; }
+        const sc = e.target.closest('[data-select-card]'); if (sc) { selectedCardId = sc.getAttribute('data-select-card'); renderCardsView(); return; }
+        const sp = e.target.closest('[data-select-person]'); if (sp) { selectedPersonId = sp.getAttribute('data-select-person'); renderCardsView(); return; }
+        const ep = e.target.closest('[data-edit-purchase]'); if (ep) { openPurchaseModal(ep.getAttribute('data-edit-purchase')); return; }
+        const de = e.target.closest('[data-del-ev]'); if (de) { state.personEvents = state.personEvents.filter((x) => x.id !== de.getAttribute('data-del-ev')); saveState(); renderAll(); showToast('Evento removido.'); return; }
+        const cs = e.target.closest('[data-confirm-sal]'); if (cs) { const fi = state.fixedIncomes.find((x) => x.id === cs.getAttribute('data-confirm-sal')); const m = getMonth(); if (fi) { fi.receivedMonths = fi.receivedMonths || {}; fi.receivedMonths[m] = true; state.bankTransactions.unshift({ id: 'bt_s_' + Date.now(), date: `${m}-${String(fi.payDay).padStart(2, '0')}`, description: fi.title, type: 'income', category: 'Salário', accountId: fi.accountId, amount: fi.amount }); const a = state.accounts.find((x) => x.id === fi.accountId); if (a) a.balance += fi.amount; saveState(); renderAll(); showToast('Confirmado.'); } return; }
+        const dp = e.target.closest('[data-del-person]'); if (dp) { state.people = state.people.filter((x) => x.id !== dp.getAttribute('data-del-person')); saveState(); renderAll(); showToast('Pessoa removida.'); }
+      });
+
+      document.getElementById('form-purchase').addEventListener('submit', (e) => { e.preventDefault(); const tot = Math.round((parseFloat(document.getElementById('pur-total').value) || 0) * 100); const map = {}; let sum = 0; document.querySelectorAll('#split-rows .sp-row').forEach((r) => { const pid = r.querySelector('.sp-p').value; const c = Math.round((parseFloat(r.querySelector('.sp-v').value) || 0) * 100); if (c > 0) { map[pid] = (map[pid] || 0) + c; sum += c; } }); if (sum !== tot) { showToast(`Soma (${fmtCents(sum)}) difere de ${fmtCents(tot)}.`); return; } const date = document.getElementById('pur-date').value; const data = { cardId: document.getElementById('pur-card').value, date, startMonth: date.slice(0, 7), description: document.getElementById('pur-desc').value.trim(), category: document.getElementById('pur-cat').value, totalCents: tot, installments: parseInt(document.getElementById('pur-inst').value, 10) || 1, splits: Object.entries(map).map(([personId, cents]) => ({ personId, cents })) }; const eid = document.getElementById('pur-id').value; if (eid) { const i = state.cardPurchases.findIndex((x) => x.id === eid); if (i >= 0) state.cardPurchases[i] = { ...state.cardPurchases[i], ...data }; showToast('Rateio atualizado.'); } else { state.cardPurchases.unshift({ id: 'cp_' + Date.now(), ...data }); showToast('Compra salva.'); } saveState(); closeModal('modal-purchase'); renderAll(); });
+      document.getElementById('form-settlement').addEventListener('submit', (e) => { e.preventDefault(); const type = document.getElementById('set-type').value, personId = document.getElementById('set-person').value, cents = Math.round((parseFloat(document.getElementById('set-amount').value) || 0) * 100), date = document.getElementById('set-date').value, accountId = document.getElementById('set-account').value || null, note = document.getElementById('set-note').value.trim(); state.personEvents.unshift({ id: 'ev_' + Date.now(), personId, month: getMonth(), type, cents, date, accountId, note }); if ((type === 'repayment' || type === 'advance') && accountId) { const a = state.accounts.find((x) => x.id === accountId); if (a) a.balance += cents / 100; state.bankTransactions.unshift({ id: 'bt_r_' + Date.now(), date, description: `${type === 'advance' ? 'Adiantamento' : 'Reembolso'} — ${getPerson(personId).name}`, type: 'reimbursement_in', category: 'Reembolso', accountId, amount: cents / 100 }); } saveState(); closeModal('modal-settlement'); renderAll(); showToast('Acerto registrado.'); });
+      document.getElementById('form-person').addEventListener('submit', (e) => { e.preventDefault(); const p = { id: 'p_' + Date.now(), name: document.getElementById('person-name').value.trim(), role: document.getElementById('person-role').value, isOwner: false }; state.people.push(p); selectedPersonId = p.id; saveState(); closeModal('modal-person'); renderAll(); showToast(`${p.name} cadastrado(a).`); });
+      document.getElementById('form-bank-tx').addEventListener('submit', (e) => { e.preventDefault(); const type = document.getElementById('btx-type').value, amt = parseFloat(document.getElementById('btx-amount').value) || 0, acc = document.getElementById('btx-acc').value; state.bankTransactions.unshift({ id: 'bt_' + Date.now(), date: `${getMonth()}-20`, description: document.getElementById('btx-desc').value.trim(), type, category: type === 'income' ? 'Extra' : 'Outros', accountId: acc, amount: amt }); const a = state.accounts.find((x) => x.id === acc); if (a) a.balance += (type === 'income' ? amt : -amt); saveState(); closeModal('modal-bank-tx'); renderAll(); showToast('Salvo.'); });
+      document.getElementById('form-salary').addEventListener('submit', (e) => { e.preventDefault(); state.fixedIncomes.push({ id: 'fi_' + Date.now(), title: document.getElementById('sal-title').value.trim(), amount: parseFloat(document.getElementById('sal-amount').value) || 0, payDay: parseInt(document.getElementById('sal-day').value, 10) || 5, accountId: document.getElementById('sal-acc').value, receivedMonths: {} }); saveState(); closeModal('modal-salary'); renderAll(); showToast('Salvo.'); });
+      document.getElementById('form-inv').addEventListener('submit', (e) => { e.preventDefault(); state.investments.push({ id: 'inv_' + Date.now(), name: document.getElementById('inv-name').value.trim(), rateType: document.getElementById('inv-rt').value, rateVal: parseFloat(document.getElementById('inv-rv').value) || 100, gross: parseFloat(document.getElementById('inv-gr').value) || 0, taxFree: document.getElementById('inv-tf').checked }); saveState(); closeModal('modal-inv'); renderAll(); showToast('Ativo salvo.'); });
+      document.getElementById('form-cap').addEventListener('submit', (e) => { e.preventDefault(); state.monthlyBudgetCap = parseFloat(document.getElementById('input-cap').value) || 12000; saveState(); closeModal('modal-cap'); renderAll(); showToast('Teto atualizado.'); });
+      document.getElementById('btn-export-json').addEventListener('click', () => { const b = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = 'financas_backup.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(u); showToast('JSON exportado.'); });
+      document.getElementById('input-import-json').addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { try { const p = JSON.parse(String(r.result || '{}')); if (p.cardPurchases && p.people) { state = p; saveState(); renderAll(); showToast('Restaurado.'); } } catch (err) { showToast('Erro no JSON.'); } e.target.value = ''; }; r.readAsText(f); });
+      document.getElementById('btn-reset-demo').addEventListener('click', () => { state = getDefaultState(); selectedCardId = state.cards[0].id; selectedPersonId = state.people[1].id; saveState(); renderAll(); showToast('Base restaurada.'); });
+
+      mountOrb('fluid-orb-side');
+      mountOrb('fluid-orb-mob');
+      mountOrb('fluid-orb-card');
+      renderAll();
+      if (window.FinancasCloud) {
+        window.FinancasCloud.init({
+          getState: () => state,
+          setState: (cloudState) => {
+            if (cloudState && Array.isArray(cloudState.accounts)) {
+              state = cloudState;
+              try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+              if (state.cards && state.cards.length && !state.cards.some((c) => c.id === selectedCardId)) {
+                selectedCardId = state.cards[0].id;
+              }
+              if (state.people && state.people.length && !state.people.some((p) => p.id === selectedPersonId)) {
+                selectedPersonId = state.people.find((p) => !p.isOwner)?.id || state.people[0].id;
+              }
+              document.documentElement.classList.toggle('dark', state.theme !== 'light');
+            }
+          },
+          onRender: () => { populateSelects(); renderAll(); },
+          showToast,
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
