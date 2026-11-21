@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Finanças — Claro & Escuro (Cartões Compartilhados + Pluggy)</title>
+  <title>Finanças Pessoais</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
   <script>
@@ -75,7 +75,6 @@
             <div class="w-8 h-8 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-bold text-xs">FP</div>
             <div>
               <div class="text-sm font-bold leading-tight">Finanças</div>
-              <div class="text-[11px] text-zinc-400">Pluggy + Manual</div>
             </div>
           </div>
           <button type="button" id="btn-orb-side" title="Fluid Orb (Rare UI) — clique para alternar cor" class="w-8 h-8 rounded-full overflow-hidden ring-2 ring-zinc-200 dark:ring-zinc-700 shrink-0" style="background: radial-gradient(circle at 35% 30%, #ffffff 0%, #60a5fa 45%, #1a73f2 100%);">
@@ -134,13 +133,7 @@
           </button>
           <div class="inline-flex items-center rounded-full border hairline bg-zinc-50 dark:bg-[#1C1C21] p-0.5">
             <button type="button" id="btn-prev-month" aria-label="Mês anterior" class="w-7 h-7 rounded-full flex items-center justify-center text-zinc-500 hover:bg-white dark:hover:bg-zinc-700"><i data-lucide="chevron-left" class="w-3.5 h-3.5"></i></button>
-            <select id="global-month-filter" aria-label="Mês" class="bg-transparent text-xs font-semibold px-1.5 focus:outline-none cursor-pointer">
-              <option value="2026-10">Out 2026</option>
-              <option value="2026-11" selected>Nov 2026</option>
-              <option value="2026-12">Dez 2026</option>
-              <option value="2027-01">Jan 2027</option>
-              <option value="2027-02">Fev 2027</option>
-            </select>
+            <select id="global-month-filter" aria-label="Mês" class="bg-transparent text-xs font-semibold px-1.5 focus:outline-none cursor-pointer"></select>
             <button type="button" id="btn-next-month" aria-label="Próximo mês" class="w-7 h-7 rounded-full flex items-center justify-center text-zinc-500 hover:bg-white dark:hover:bg-zinc-700"><i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></button>
           </div>
         </div>
@@ -171,15 +164,17 @@
             <div class="text-[11px] text-zinc-400">Finanças Pessoais &gt; <span id="crumb-label">Resumo geral</span></div>
             <h1 id="page-heading" class="text-xl sm:text-2xl font-bold tracking-tight mt-0.5">Resumo geral</h1>
           </div>
-          <div class="flex items-center gap-2 no-print">
+          <div class="flex flex-wrap items-center gap-2 no-print">
             <button type="button" id="btn-quick-set" class="h-8 px-3 rounded-full border hairline bg-white dark:bg-[#1C1C21] text-xs font-medium inline-flex items-center gap-1.5 hover:border-emerald-500 transition">
               <i data-lucide="banknote" class="w-3.5 h-3.5 text-emerald-500"></i>
               <span>Acerto</span>
             </button>
-            <button type="button" id="btn-quick-sync" class="h-8 px-3 rounded-full border hairline bg-white dark:bg-[#1C1C21] text-xs font-medium inline-flex items-center gap-1.5 hover:border-blue-500 transition">
-              <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-blue-500"></i>
-              <span class="hidden sm:inline">Pluggy OK</span>
-            </button>
+            <div id="cloud-sync-pill" class="min-h-8 flex items-center gap-1.5 px-3 rounded-full text-[11px] font-medium border hairline bg-white dark:bg-[#1C1C21]">
+              <span id="cloud-sync-dot" class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>
+              <span id="cloud-sync-text" role="status">Conectando...</span>
+              <button id="btn-cloud-reload" type="button" class="hidden ml-1 pl-1.5 border-l hairline text-blue-500">Usar versão da nuvem</button>
+              <button id="btn-cloud-logout" type="button" class="hidden ml-1 pl-1.5 border-l hairline text-zinc-400 hover:text-rose-500">Sair</button>
+            </div>
           </div>
         </div>
 
@@ -489,12 +484,6 @@
   <div id="modal-inv" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"><div class="absolute inset-0 modal-backdrop" data-close-modal="modal-inv"></div><div class="relative w-full sm:max-w-md card rounded-t-3xl sm:rounded-2xl p-5 space-y-3"><div class="flex justify-between items-center"><h3 class="text-sm font-bold">Novo investimento</h3><button type="button" data-close-modal="modal-inv"><i data-lucide="x" class="w-4 h-4 text-zinc-400"></i></button></div><form id="form-inv" class="space-y-3"><input id="inv-name" type="text" required placeholder="Ativo" class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-sm" /><div class="grid grid-cols-2 gap-2"><select id="inv-rt" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-xs"><option value="CDI">% do CDI</option><option value="IPCA">IPCA + %</option><option value="PRE">Pré % a.a.</option></select><input id="inv-rv" type="number" step="0.05" value="100" required class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-sm font-bold" /></div><div class="grid grid-cols-2 gap-2"><input id="inv-gr" type="number" step="0.01" min="0" required placeholder="Saldo bruto R$" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-sm font-bold" /><label class="flex items-center gap-2 text-xs"><input id="inv-tf" type="checkbox" class="rounded" /><span>Isento IR</span></label></div><button type="submit" class="w-full h-11 rounded-xl bg-blue-600 text-white text-sm font-semibold">Salvar</button></form></div></div>
   <div id="modal-cap" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"><div class="absolute inset-0 modal-backdrop" data-close-modal="modal-cap"></div><div class="relative w-full sm:max-w-sm card rounded-t-3xl sm:rounded-2xl p-5 space-y-3"><div class="flex justify-between items-center"><h3 class="text-sm font-bold">Teto mensal próprio</h3><button type="button" data-close-modal="modal-cap"><i data-lucide="x" class="w-4 h-4 text-zinc-400"></i></button></div><form id="form-cap" class="space-y-3"><input id="input-cap" type="number" step="100" min="500" required class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1C1C21] text-sm font-bold" /><button type="submit" class="w-full h-11 rounded-xl bg-blue-600 text-white text-sm font-semibold">Atualizar</button></form></div></div>
 
-    <div id="cloud-sync-pill" class="no-print fixed top-3 right-3 z-40 hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border hairline bg-white/85 dark:bg-[#141418]/85 backdrop-blur shadow-sm">
-    <span id="cloud-sync-dot" class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>
-    <span id="cloud-sync-text">Conectando...</span>
-    <button id="btn-cloud-logout" type="button" class="hidden ml-1 pl-1.5 border-l hairline text-zinc-400 hover:text-rose-500">Sair</button>
-  </div>
-
   <div id="cloud-auth-gate" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4 bg-zinc-950/85 backdrop-blur-md">
     <div class="w-full max-w-sm card rounded-2xl p-6 shadow-2xl space-y-4">
       <div>
@@ -519,15 +508,36 @@
 
   <div id="toast" class="no-print fixed bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 hidden rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 px-4 py-2 text-xs font-semibold shadow-xl"><span id="toast-msg">OK</span></div>
 
-  <script>
+  <script type="module">
+    import { isFinancialState, isMonthKey } from './js/financial-state.js';
+
     (function () {
       const STORAGE_KEY = 'fincontrol_saffron_orb_v7';
-      const MONTHS = ['2026-10', '2026-11', '2026-12', '2027-01', '2027-02'];
-      const MONTH_NAMES = { '2026-10': 'Outubro 2026', '2026-11': 'Novembro 2026', '2026-12': 'Dezembro 2026', '2027-01': 'Janeiro 2027', '2027-02': 'Fevereiro 2027' };
       const CATEGORIES = ['Alimentação', 'Moradia', 'Saúde', 'Educação', 'Transporte', 'Lazer', 'Compras', 'Assinaturas', 'Outros'];
+      const monthFilter = document.getElementById('global-month-filter');
+      const now = new Date();
+      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const shortMonth = new Intl.DateTimeFormat('pt-BR', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+      const longMonth = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 
       function addMonths(ym, off) { const [y, m] = ym.split('-').map(Number); const d = new Date(y, m - 1 + off, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }
       function splitCents(tot, n) { const b = Math.floor(tot / n), r = tot - b * n; return Array.from({ length: n }, (_, i) => b + (i === 0 ? r : 0)); }
+
+      function updateMonthFilter(selected = monthFilter.value || currentMonth) {
+        const months = new Set([currentMonth, selected, addMonths(selected, -1), addMonths(selected, 1)]);
+        for (const purchase of state.cardPurchases) {
+          if (!isMonthKey(purchase.startMonth)) continue;
+          for (let i = 0; i < purchase.installments; i++) months.add(addMonths(purchase.startMonth, i));
+        }
+        for (const event of state.personEvents) months.add(event.month);
+        for (const tx of state.bankTransactions) months.add(tx.date.slice(0, 7));
+        for (const income of state.fixedIncomes) {
+          for (const month of Object.keys(income.receivedMonths || {})) months.add(month);
+        }
+        monthFilter.replaceChildren(...Array.from(months).filter(isMonthKey).sort()
+          .map((month) => new Option(shortMonth.format(new Date(`${month}-01T00:00:00Z`)), month)));
+        monthFilter.value = selected;
+      }
 
       function getDefaultState() {
         return {
@@ -582,20 +592,31 @@
         };
       }
 
-      function loadState() { try { const r = localStorage.getItem(STORAGE_KEY); if (r) { const p = JSON.parse(r); if (p && Array.isArray(p.cardPurchases)) return p; } } catch (e) {} return getDefaultState(); }
-      function saveState() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {} if (window.FinancasCloud) window.FinancasCloud.scheduleSave(state); }
+      function loadState() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+          if (isFinancialState(saved)) return saved;
+        } catch (e) {}
+        return getDefaultState();
+      }
+
+      function saveState() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+        if (window.FinancasCloud) window.FinancasCloud.scheduleSave(state);
+        updateMonthFilter();
+      }
 
       let state = loadState();
       let currentView = 'dashboard';
-      let selectedCardId = state.cards[0].id;
-      let selectedPersonId = state.people.find((p) => !p.isOwner)?.id || state.people[0].id;
+      let selectedCardId;
+      let selectedPersonId;
       let toastTimer = null;
 
       const fmtBRL = (v) => (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
       const fmtCents = (c) => fmtBRL((Number(c) || 0) / 100);
       const fmtDate = (iso) => iso && iso.length >= 10 ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '-';
       const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-      const getMonth = () => document.getElementById('global-month-filter').value;
+      const getMonth = () => monthFilter.value;
       const getPerson = (id) => state.people.find((p) => p.id === id) || { id, name: 'Pessoa', role: '' };
       const getCard = (id) => state.cards.find((c) => c.id === id) || { id, name: 'Cartão', last4: '0000' };
       const getAccount = (id) => state.accounts.find((a) => a.id === id) || { id, name: 'Conta' };
@@ -604,22 +625,42 @@
       function copyText(txt) { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => showToast('Resumo copiado.')).catch(() => fallbackCopy(txt)); else fallbackCopy(txt); }
       function fallbackCopy(txt) { const ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); showToast('Resumo copiado.'); } catch (e) {} document.body.removeChild(ta); }
 
+      function installmentShares(purchase, installments, index) {
+        const remaining = purchase.splits.map((split) => split.cents);
+        let remainingTotal = purchase.totalCents;
+        let shares;
+
+        for (const cents of installments.slice(0, index + 1)) {
+          shares = remaining.map((balance) => {
+            const quota = remainingTotal > 0 ? cents * balance / remainingTotal : 0;
+            const whole = Math.floor(quota);
+            return { cents: whole, fraction: quota - whole };
+          });
+          const leftover = cents - shares.reduce((total, share) => total + share.cents, 0);
+          // Os maiores restos recebem os centavos que faltam nesta parcela.
+          const ranked = shares.filter((share) => share.fraction > 0).sort((a, b) => b.fraction - a.fraction);
+          for (const share of ranked.slice(0, leftover)) share.cents++;
+          shares.forEach((share, i) => { remaining[i] -= share.cents; });
+          remainingTotal -= cents;
+        }
+
+        return purchase.splits.map((split, i) => ({ personId: split.personId, cents: shares[i].cents }));
+      }
+
       function getMonthInstallments(monthKey) {
         const rows = [];
-        state.cardPurchases.forEach((cp) => {
-          const n = Math.max(1, Number(cp.installments) || 1);
-          const parts = splitCents(cp.totalCents, n);
-          for (let i = 0; i < n; i++) {
-            if (addMonths(cp.startMonth, i) !== monthKey) continue;
-            const instCents = parts[i];
-            const splits = []; let alloc = 0;
-            cp.splits.forEach((sp, idx) => {
-              const s = idx === cp.splits.length - 1 ? instCents - alloc : Math.round((instCents * sp.cents) / cp.totalCents);
-              alloc += s; splits.push({ personId: sp.personId, cents: s });
-            });
-            rows.push({ purchaseId: cp.id, cardId: cp.cardId, date: cp.date, description: cp.description, category: cp.category, installmentNumber: i + 1, installmentsTotal: n, fullCents: instCents, splits });
-          }
-        });
+        for (const purchase of state.cardPurchases) {
+          const count = Math.max(1, Math.trunc(Number(purchase.installments)) || 1);
+          const parts = splitCents(purchase.totalCents, count);
+          const index = parts.findIndex((_, i) => addMonths(purchase.startMonth, i) === monthKey);
+          if (index === -1) continue;
+          rows.push({
+            purchaseId: purchase.id, cardId: purchase.cardId, date: purchase.date,
+            description: purchase.description, category: purchase.category,
+            installmentNumber: index + 1, installmentsTotal: count, fullCents: parts[index],
+            splits: installmentShares(purchase, parts, index),
+          });
+        }
         return rows;
       }
 
@@ -676,7 +717,8 @@
         const mKey = getMonth(), mRows = getMonthInstallments(mKey);
         const cash = state.accounts.reduce((s, a) => s + a.balance, 0);
         const fullBill = mRows.reduce((s, r) => s + r.fullCents, 0);
-        const ownCard = mRows.reduce((s, r) => s + (r.splits.find((x) => x.personId === 'p_italo')?.cents || 0), 0);
+        const ownerId = state.people.find((person) => person.isOwner)?.id;
+        const ownCard = mRows.reduce((s, r) => s + (r.splits.find((x) => x.personId === ownerId)?.cents || 0), 0);
         const thirdCard = fullBill - ownCard;
         const bankExp = state.bankTransactions.filter((t) => t.type === 'expense' && t.date.startsWith(mKey)).reduce((s, t) => s + t.amount, 0);
         const ownTotal = bankExp + ownCard / 100;
@@ -689,7 +731,7 @@
         document.getElementById('ring-acc-main').setAttribute('stroke-dashoffset', (150.8 * (1 - topPct / 100)).toFixed(1));
         document.getElementById('kpi-acc-breakdown').innerHTML = state.accounts.map((a) => {
           const pct = cash > 0 ? Math.round((a.balance / cash) * 100) : 0;
-          return `<div class="flex items-center justify-between"><span class="flex items-center gap-2 text-zinc-500 dark:text-zinc-400"><span class="w-1.5 h-1.5 rounded-full" style="background:${a.color || '#3B82F6'}"></span>${esc(a.name)}</span><span class="font-semibold tabular-nums">${pct}%</span></div>`;
+          return `<div class="flex items-center justify-between"><span class="flex items-center gap-2 text-zinc-500 dark:text-zinc-400"><span class="w-1.5 h-1.5 rounded-full" style="background:${esc(a.color || '#3B82F6')}"></span>${esc(a.name)}</span><span class="font-semibold tabular-nums">${pct}%</span></div>`;
         }).join('');
 
         // Card 2: Full Bill + Purple/White Segmented Bar
@@ -794,7 +836,6 @@
           return `<button type="button" data-select-card="${esc(c.id)}" class="shrink-0 w-56 p-4 rounded-2xl border ${sel} card text-left transition"><div class="flex justify-between text-xs text-zinc-400"><span>${esc(c.institution)}</span><span>••${esc(c.last4)}</span></div><div class="text-sm font-bold mt-1 truncate">${esc(c.name)}</div><div class="text-lg font-bold tabular-nums mt-2">${fmtCents(full)}</div><div class="text-[10px] text-zinc-400 mt-0.5">Fatura integral · Vence dia ${c.dueDay}</div></button>`;
         }).join('');
 
-        if (!state.people.some((p) => p.id === selectedPersonId)) selectedPersonId = state.people[0].id;
         document.getElementById('person-pills').innerHTML = state.people.map((p) => {
           const l = computePersonLedger(p.id, mKey);
           const on = p.id === selectedPersonId ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 border-zinc-900' : 'border hairline text-zinc-500';
@@ -850,6 +891,10 @@
       }
 
       function renderAll() {
+        if (!state.cards.some((card) => card.id === selectedCardId)) selectedCardId = state.cards[0]?.id;
+        if (!state.people.some((person) => person.id === selectedPersonId)) {
+          selectedPersonId = state.people.find((person) => !person.isOwner)?.id || state.people[0]?.id;
+        }
         document.documentElement.classList.toggle('dark', state.theme === 'dark');
         renderSidebar();
         if (currentView === 'dashboard') renderDashboard();
@@ -881,6 +926,10 @@
         el.className = sum === tot && tot > 0 ? 'font-bold text-emerald-500' : 'font-bold text-rose-500';
       }
       function openPurchaseModal(eid) {
+        if (!state.cards.length || !state.people.length) {
+          showToast('É necessário ter um cartão e uma pessoa para lançar uma compra.');
+          return;
+        }
         populateSelects(); document.getElementById('form-purchase').reset(); document.getElementById('pur-id').value = '';
         document.getElementById('pur-date').value = `${getMonth()}-20`; document.getElementById('pur-card').value = selectedCardId;
         document.getElementById('split-rows').innerHTML = ''; const del = document.getElementById('btn-del-pur');
@@ -895,19 +944,50 @@
           }
         }
         document.getElementById('modal-pur-title').textContent = 'Nova compra e rateio'; document.getElementById('pur-total').value = '300.00';
-        del.classList.add('hidden'); addSplitRow(selectedPersonId || 'p_italo', 300); openModal('modal-purchase');
+        del.classList.add('hidden'); addSplitRow(selectedPersonId || state.people[0].id, 300); openModal('modal-purchase');
       }
       function openShareModal() {
         const mKey = getMonth(), p = getPerson(selectedPersonId), led = computePersonLedger(selectedPersonId, mKey);
         document.getElementById('share-text').value = [
-          `Resumo Cartão — ${p.name} (${MONTH_NAMES[mKey] || mKey})`, '',
+          `Resumo Cartão — ${p.name} (${longMonth.format(new Date(`${mKey}-01T00:00:00Z`))})`, '',
           ...(led.items.length ? led.items.map((it) => `- ${fmtDate(it.date)} | ${it.description} (${it.installmentsTotal > 1 ? it.installmentNumber + '/' + it.installmentsTotal : 'à vista'}): ${fmtCents(it.personCents)}`) : ['- Nenhum lançamento']),
           '', `Total a cobrar: ${fmtCents(led.charge)}`, `Recebido / adiantado: ${fmtCents(led.received)}`,
           `Saldo restante: ${led.remaining < 0 ? 'Crédito ' + fmtCents(-led.remaining) : fmtCents(led.remaining)}`
         ].join('\n');
         openModal('modal-share');
       }
-      function openSetModal() { populateSelects(); document.getElementById('form-settlement').reset(); document.getElementById('set-date').value = `${getMonth()}-20`; if (selectedPersonId && selectedPersonId !== 'p_italo') document.getElementById('set-person').value = selectedPersonId; openModal('modal-settlement'); }
+      function openSetModal() {
+        const eligible = state.people.filter((person) => !person.isOwner);
+        if (!eligible.length) { showToast('Cadastre uma pessoa para registrar um acerto.'); return; }
+
+        populateSelects();
+        document.getElementById('form-settlement').reset();
+        document.getElementById('set-date').value = `${getMonth()}-20`;
+        document.getElementById('set-person').value = eligible.find((person) => person.id === selectedPersonId)?.id || eligible[0].id;
+        openModal('modal-settlement');
+      }
+
+      function removeSettlement(eventId) {
+        const event = state.personEvents.find((entry) => entry.id === eventId);
+        if (!event) return;
+        if (event.accountId && event.type !== 'refund') {
+          const suffix = event.id.slice(3);
+          const candidates = state.bankTransactions.filter((tx) => tx.category === 'Reembolso'
+            && tx.accountId === event.accountId && tx.date === event.date && Math.round(tx.amount * 100) === event.cents
+            && (tx.id === `bt_r_${suffix}` || (/^\d{13}$/.test(suffix) && /^bt_r_\d{13}$/.test(tx.id)
+              && Math.abs(Number(tx.id.slice(5)) - Number(suffix)) <= 5)));
+          if (candidates.length === 1) {
+            const transaction = candidates[0];
+            const account = state.accounts.find((entry) => entry.id === transaction.accountId);
+            if (account) account.balance = (Math.round(account.balance * 100) - event.cents) / 100;
+            state.bankTransactions = state.bankTransactions.filter((tx) => tx.id !== transaction.id);
+          }
+        }
+        state.personEvents = state.personEvents.filter((entry) => entry.id !== eventId);
+        saveState();
+        renderAll();
+        showToast('Acerto removido.');
+      }
 
       // Official WebGL Fluid Orb (swamimalode07/rare-ui)
       const ORB_COLORS = ['#1A73F2', '#8B5CF6', '#10B981', '#F97316'];
@@ -945,11 +1025,10 @@
       document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
       document.getElementById('btn-theme-light').addEventListener('click', () => { state.theme = 'light'; saveState(); renderAll(); });
       document.getElementById('btn-theme-dark').addEventListener('click', () => { state.theme = 'dark'; saveState(); renderAll(); });
-      document.getElementById('global-month-filter').addEventListener('change', renderAll);
+      monthFilter.addEventListener('change', () => { updateMonthFilter(); renderAll(); });
       document.getElementById('global-search').addEventListener('input', () => { if (currentView === 'dashboard') renderDashboard(); });
-      document.getElementById('btn-prev-month').addEventListener('click', () => { const s = document.getElementById('global-month-filter'); const i = MONTHS.indexOf(s.value); if (i > 0) { s.value = MONTHS[i - 1]; renderAll(); } });
-      document.getElementById('btn-next-month').addEventListener('click', () => { const s = document.getElementById('global-month-filter'); const i = MONTHS.indexOf(s.value); if (i >= 0 && i < MONTHS.length - 1) { s.value = MONTHS[i + 1]; renderAll(); } });
-      document.getElementById('btn-quick-sync').addEventListener('click', () => showToast('Pluggy sincronizado sem duplicidades.'));
+      document.getElementById('btn-prev-month').addEventListener('click', () => { updateMonthFilter(addMonths(getMonth(), -1)); renderAll(); });
+      document.getElementById('btn-next-month').addEventListener('click', () => { updateMonthFilter(addMonths(getMonth(), 1)); renderAll(); });
       ['btn-top-add', 'btn-card-add-pur'].forEach((id) => document.getElementById(id).addEventListener('click', () => openPurchaseModal(null)));
       ['btn-quick-set', 'btn-open-set'].forEach((id) => document.getElementById(id).addEventListener('click', openSetModal));
       ['btn-side-share', 'btn-open-share'].forEach((id) => document.getElementById(id).addEventListener('click', openShareModal));
@@ -966,7 +1045,32 @@
       document.getElementById('split-rows').addEventListener('input', updateSpSt);
       document.getElementById('split-rows').addEventListener('click', (e) => { const rm = e.target.closest('.rm-sp'); if (rm && document.querySelectorAll('#split-rows .sp-row').length > 1) { rm.closest('.sp-row').remove(); updateSpSt(); } });
       document.getElementById('btn-del-pur').addEventListener('click', () => { const id = document.getElementById('pur-id').value; if (!id) return; state.cardPurchases = state.cardPurchases.filter((x) => x.id !== id); saveState(); closeModal('modal-purchase'); renderAll(); showToast('Compra excluída.'); });
-      document.getElementById('btn-pay-bill').addEventListener('click', () => { const m = getMonth(), c = getCard(selectedCardId), full = getMonthInstallments(m).filter((r) => r.cardId === selectedCardId).reduce((s, r) => s + r.fullCents, 0); if (full <= 0) { showToast('Sem fatura em aberto.'); return; } state.bankTransactions.unshift({ id: 'bt_p_' + Date.now(), date: `${m}-20`, description: `Fatura integral ${c.name}`, type: 'bill_payment', category: 'Transferência', accountId: state.accounts[0].id, amount: full / 100 }); state.accounts[0].balance -= full / 100; saveState(); renderAll(); showToast(`Fatura (${fmtCents(full)}) paga sem duplicar despesas.`); });
+      document.getElementById('btn-pay-bill').addEventListener('click', () => {
+        const month = getMonth();
+        const card = getCard(selectedCardId);
+        const total = getMonthInstallments(month).filter((row) => row.cardId === card.id)
+          .reduce((sum, row) => sum + row.fullCents, 0);
+        if (total <= 0) { showToast('Sem fatura em aberto.'); return; }
+
+        const description = `Fatura integral ${card.name}`;
+        const paymentPrefix = `bt_p_${month}:${encodeURIComponent(card.id)}:`;
+        const paid = state.bankTransactions.filter((tx) => tx.type === 'bill_payment' && (
+          tx.id.startsWith(paymentPrefix) || (/^bt_p_\d+$/.test(tx.id) && tx.description === description && tx.date.startsWith(month))
+        )).reduce((sum, tx) => sum + Math.round(tx.amount * 100), 0);
+        const outstanding = total - paid;
+        if (outstanding <= 0) { showToast('Fatura já paga.'); return; }
+
+        const account = state.accounts[0];
+        if (!account) { showToast('É necessário ter uma conta para pagar a fatura.'); return; }
+        state.bankTransactions.unshift({
+          id: paymentPrefix + Date.now(), date: `${month}-20`, description, type: 'bill_payment',
+          category: 'Transferência', accountId: account.id, amount: outstanding / 100,
+        });
+        account.balance = (Math.round(account.balance * 100) - outstanding) / 100;
+        saveState();
+        renderAll();
+        showToast(`Pagamento de ${fmtCents(outstanding)} registrado.`);
+      });
       ['rate-cdi', 'rate-ipca', 'rate-ir'].forEach((id) => document.getElementById(id).addEventListener('input', () => { state.marketRates.cdi = parseFloat(document.getElementById('rate-cdi').value) || 13.65; state.marketRates.ipca = parseFloat(document.getElementById('rate-ipca').value) || 4.50; state.marketRates.irRate = parseFloat(document.getElementById('rate-ir').value) || 0.175; saveState(); renderAll(); }));
 
       document.addEventListener('click', (e) => {
@@ -976,41 +1080,118 @@
         const sc = e.target.closest('[data-select-card]'); if (sc) { selectedCardId = sc.getAttribute('data-select-card'); renderCardsView(); return; }
         const sp = e.target.closest('[data-select-person]'); if (sp) { selectedPersonId = sp.getAttribute('data-select-person'); renderCardsView(); return; }
         const ep = e.target.closest('[data-edit-purchase]'); if (ep) { openPurchaseModal(ep.getAttribute('data-edit-purchase')); return; }
-        const de = e.target.closest('[data-del-ev]'); if (de) { state.personEvents = state.personEvents.filter((x) => x.id !== de.getAttribute('data-del-ev')); saveState(); renderAll(); showToast('Evento removido.'); return; }
+        const de = e.target.closest('[data-del-ev]'); if (de) { removeSettlement(de.dataset.delEv); return; }
         const cs = e.target.closest('[data-confirm-sal]'); if (cs) { const fi = state.fixedIncomes.find((x) => x.id === cs.getAttribute('data-confirm-sal')); const m = getMonth(); if (fi) { fi.receivedMonths = fi.receivedMonths || {}; fi.receivedMonths[m] = true; state.bankTransactions.unshift({ id: 'bt_s_' + Date.now(), date: `${m}-${String(fi.payDay).padStart(2, '0')}`, description: fi.title, type: 'income', category: 'Salário', accountId: fi.accountId, amount: fi.amount }); const a = state.accounts.find((x) => x.id === fi.accountId); if (a) a.balance += fi.amount; saveState(); renderAll(); showToast('Confirmado.'); } return; }
-        const dp = e.target.closest('[data-del-person]'); if (dp) { state.people = state.people.filter((x) => x.id !== dp.getAttribute('data-del-person')); saveState(); renderAll(); showToast('Pessoa removida.'); }
+        const dp = e.target.closest('[data-del-person]');
+        if (dp) {
+          const personId = dp.dataset.delPerson;
+          const hasPurchases = state.cardPurchases.some((purchase) => purchase.splits.some((split) => split.personId === personId));
+          const hasEvents = state.personEvents.some((event) => event.personId === personId);
+          if (hasPurchases || hasEvents) {
+            showToast('Essa pessoa está vinculada ao histórico de compras ou acertos.');
+            return;
+          }
+          state.people = state.people.filter((person) => person.id !== personId);
+          saveState();
+          renderAll();
+          showToast('Pessoa removida.');
+        }
       });
 
       document.getElementById('form-purchase').addEventListener('submit', (e) => { e.preventDefault(); const tot = Math.round((parseFloat(document.getElementById('pur-total').value) || 0) * 100); const map = {}; let sum = 0; document.querySelectorAll('#split-rows .sp-row').forEach((r) => { const pid = r.querySelector('.sp-p').value; const c = Math.round((parseFloat(r.querySelector('.sp-v').value) || 0) * 100); if (c > 0) { map[pid] = (map[pid] || 0) + c; sum += c; } }); if (sum !== tot) { showToast(`Soma (${fmtCents(sum)}) difere de ${fmtCents(tot)}.`); return; } const date = document.getElementById('pur-date').value; const data = { cardId: document.getElementById('pur-card').value, date, startMonth: date.slice(0, 7), description: document.getElementById('pur-desc').value.trim(), category: document.getElementById('pur-cat').value, totalCents: tot, installments: parseInt(document.getElementById('pur-inst').value, 10) || 1, splits: Object.entries(map).map(([personId, cents]) => ({ personId, cents })) }; const eid = document.getElementById('pur-id').value; if (eid) { const i = state.cardPurchases.findIndex((x) => x.id === eid); if (i >= 0) state.cardPurchases[i] = { ...state.cardPurchases[i], ...data }; showToast('Rateio atualizado.'); } else { state.cardPurchases.unshift({ id: 'cp_' + Date.now(), ...data }); showToast('Compra salva.'); } saveState(); closeModal('modal-purchase'); renderAll(); });
-      document.getElementById('form-settlement').addEventListener('submit', (e) => { e.preventDefault(); const type = document.getElementById('set-type').value, personId = document.getElementById('set-person').value, cents = Math.round((parseFloat(document.getElementById('set-amount').value) || 0) * 100), date = document.getElementById('set-date').value, accountId = document.getElementById('set-account').value || null, note = document.getElementById('set-note').value.trim(); state.personEvents.unshift({ id: 'ev_' + Date.now(), personId, month: getMonth(), type, cents, date, accountId, note }); if ((type === 'repayment' || type === 'advance') && accountId) { const a = state.accounts.find((x) => x.id === accountId); if (a) a.balance += cents / 100; state.bankTransactions.unshift({ id: 'bt_r_' + Date.now(), date, description: `${type === 'advance' ? 'Adiantamento' : 'Reembolso'} — ${getPerson(personId).name}`, type: 'reimbursement_in', category: 'Reembolso', accountId, amount: cents / 100 }); } saveState(); closeModal('modal-settlement'); renderAll(); showToast('Acerto registrado.'); });
+      document.getElementById('form-settlement').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const personId = document.getElementById('set-person').value;
+        const person = state.people.find((entry) => entry.id === personId && !entry.isOwner);
+        if (!person) { showToast('Selecione uma pessoa para continuar.'); return; }
+
+        const type = document.getElementById('set-type').value;
+        const cents = Math.round(Number(document.getElementById('set-amount').value) * 100);
+        const date = document.getElementById('set-date').value;
+        const account = state.accounts.find((entry) => entry.id === document.getElementById('set-account').value);
+        const note = document.getElementById('set-note').value.trim();
+        const id = crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const month = date.slice(0, 7);
+        state.personEvents.unshift({ id: `ev_${id}`, personId, month, type, cents, date, accountId: account?.id || null, note });
+        if (account && type !== 'refund') {
+          account.balance = (Math.round(account.balance * 100) + cents) / 100;
+          state.bankTransactions.unshift({
+            id: `bt_r_${id}`, date, description: `${type === 'advance' ? 'Adiantamento' : 'Reembolso'} — ${person.name}`,
+            type: 'reimbursement_in', category: 'Reembolso', accountId: account.id, amount: cents / 100,
+          });
+        }
+        saveState();
+        closeModal('modal-settlement');
+        updateMonthFilter(month);
+        renderAll();
+        showToast('Acerto registrado.');
+      });
       document.getElementById('form-person').addEventListener('submit', (e) => { e.preventDefault(); const p = { id: 'p_' + Date.now(), name: document.getElementById('person-name').value.trim(), role: document.getElementById('person-role').value, isOwner: false }; state.people.push(p); selectedPersonId = p.id; saveState(); closeModal('modal-person'); renderAll(); showToast(`${p.name} cadastrado(a).`); });
-      document.getElementById('form-bank-tx').addEventListener('submit', (e) => { e.preventDefault(); const type = document.getElementById('btx-type').value, amt = parseFloat(document.getElementById('btx-amount').value) || 0, acc = document.getElementById('btx-acc').value; state.bankTransactions.unshift({ id: 'bt_' + Date.now(), date: `${getMonth()}-20`, description: document.getElementById('btx-desc').value.trim(), type, category: type === 'income' ? 'Extra' : 'Outros', accountId: acc, amount: amt }); const a = state.accounts.find((x) => x.id === acc); if (a) a.balance += (type === 'income' ? amt : -amt); saveState(); closeModal('modal-bank-tx'); renderAll(); showToast('Salvo.'); });
-      document.getElementById('form-salary').addEventListener('submit', (e) => { e.preventDefault(); state.fixedIncomes.push({ id: 'fi_' + Date.now(), title: document.getElementById('sal-title').value.trim(), amount: parseFloat(document.getElementById('sal-amount').value) || 0, payDay: parseInt(document.getElementById('sal-day').value, 10) || 5, accountId: document.getElementById('sal-acc').value, receivedMonths: {} }); saveState(); closeModal('modal-salary'); renderAll(); showToast('Salvo.'); });
+      document.getElementById('form-bank-tx').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const account = state.accounts.find((entry) => entry.id === document.getElementById('btx-acc').value);
+        if (!account) { showToast('Selecione uma conta para registrar a movimentação.'); return; }
+        const type = document.getElementById('btx-type').value;
+        const cents = Math.round(Number(document.getElementById('btx-amount').value) * 100);
+        state.bankTransactions.unshift({
+          id: 'bt_' + Date.now(), date: `${getMonth()}-20`, description: document.getElementById('btx-desc').value.trim(),
+          type, category: type === 'income' ? 'Extra' : 'Outros', accountId: account.id, amount: cents / 100,
+        });
+        account.balance = (Math.round(account.balance * 100) + (type === 'income' ? cents : -cents)) / 100;
+        saveState(); closeModal('modal-bank-tx'); renderAll(); showToast('Salvo.');
+      });
+      document.getElementById('form-salary').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const accountId = document.getElementById('sal-acc').value;
+        if (!state.accounts.some((entry) => entry.id === accountId)) {
+          showToast('Selecione uma conta para registrar a renda fixa.');
+          return;
+        }
+        state.fixedIncomes.push({
+          id: 'fi_' + Date.now(), title: document.getElementById('sal-title').value.trim(),
+          amount: Number(document.getElementById('sal-amount').value),
+          payDay: Number(document.getElementById('sal-day').value), accountId, receivedMonths: {},
+        });
+        saveState(); closeModal('modal-salary'); renderAll(); showToast('Salvo.');
+      });
       document.getElementById('form-inv').addEventListener('submit', (e) => { e.preventDefault(); state.investments.push({ id: 'inv_' + Date.now(), name: document.getElementById('inv-name').value.trim(), rateType: document.getElementById('inv-rt').value, rateVal: parseFloat(document.getElementById('inv-rv').value) || 100, gross: parseFloat(document.getElementById('inv-gr').value) || 0, taxFree: document.getElementById('inv-tf').checked }); saveState(); closeModal('modal-inv'); renderAll(); showToast('Ativo salvo.'); });
       document.getElementById('form-cap').addEventListener('submit', (e) => { e.preventDefault(); state.monthlyBudgetCap = parseFloat(document.getElementById('input-cap').value) || 12000; saveState(); closeModal('modal-cap'); renderAll(); showToast('Teto atualizado.'); });
       document.getElementById('btn-export-json').addEventListener('click', () => { const b = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = 'financas_backup.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(u); showToast('JSON exportado.'); });
-      document.getElementById('input-import-json').addEventListener('change', (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { try { const p = JSON.parse(String(r.result || '{}')); if (p.cardPurchases && p.people) { state = p; saveState(); renderAll(); showToast('Restaurado.'); } } catch (err) { showToast('Erro no JSON.'); } e.target.value = ''; }; r.readAsText(f); });
-      document.getElementById('btn-reset-demo').addEventListener('click', () => { state = getDefaultState(); selectedCardId = state.cards[0].id; selectedPersonId = state.people[1].id; saveState(); renderAll(); showToast('Base restaurada.'); });
+      document.getElementById('input-import-json').addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const backup = JSON.parse(String(reader.result));
+            if (!isFinancialState(backup)) throw new Error('Backup inválido');
+            state = backup;
+            saveState();
+            renderAll();
+            showToast('Restaurado.');
+          } catch {
+            showToast('Backup JSON inválido ou incompleto.');
+          }
+        };
+        reader.onerror = () => showToast('Não foi possível ler o backup.');
+        reader.readAsText(file);
+        e.target.value = '';
+      });
+      document.getElementById('btn-reset-demo').addEventListener('click', () => { state = getDefaultState(); selectedCardId = undefined; selectedPersonId = undefined; saveState(); renderAll(); showToast('Base restaurada.'); });
 
       mountOrb('fluid-orb-side');
       mountOrb('fluid-orb-mob');
       mountOrb('fluid-orb-card');
+      updateMonthFilter();
       renderAll();
       if (window.FinancasCloud) {
         window.FinancasCloud.init({
           getState: () => state,
           setState: (cloudState) => {
-            if (cloudState && Array.isArray(cloudState.accounts)) {
-              state = cloudState;
-              try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
-              if (state.cards && state.cards.length && !state.cards.some((c) => c.id === selectedCardId)) {
-                selectedCardId = state.cards[0].id;
-              }
-              if (state.people && state.people.length && !state.people.some((p) => p.id === selectedPersonId)) {
-                selectedPersonId = state.people.find((p) => !p.isOwner)?.id || state.people[0].id;
-              }
-              document.documentElement.classList.toggle('dark', state.theme !== 'light');
-            }
+            if (!isFinancialState(cloudState)) throw new Error('Dados financeiros inválidos');
+            state = cloudState;
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+            updateMonthFilter();
           },
           onRender: () => { populateSelects(); renderAll(); },
           showToast,
