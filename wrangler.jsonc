@@ -9,15 +9,12 @@
   },
   "observability": {
     "enabled": true
-  }
-  // Após criar o banco D1 na Cloudflare (financas-pessoais-db),
-  // você pode vinculá-lo em Settings > Bindings (nome da variável: DB)
-  // ou descomentar o bloco abaixo com o database_id gerado na sua conta:
-  // "d1_databases": [
-  //   {
-  //     "binding": "DB",
-  //     "database_name": "financas-pessoais-db",
-  //     "database_id": "SEU_DATABASE_ID_AQUI"
-  //   }
-  // ]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "financas-pessoais-db",
+      "database_id": "29bb07cd-fd88-45da-ae94-138c6dd82cc5"
+    }
+  ]
 }
