@@ -27,10 +27,16 @@ html.dark { --accent: #a7c6ff; --selected: #233451; }
 .forecast { margin-top:18px; border-top:1px solid var(--border-hairline); padding-top:16px; }
 .forecast summary { cursor:pointer; font-weight:650; font-size:15px; }
 .forecast li { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border-hairline); font-size:14px; }
-#statement-dialog { background:var(--bg-surface); color:var(--text-primary); border:1px solid var(--border-hairline); border-radius:18px; width:min(580px,calc(100% - 20px)); max-height:85dvh; margin:auto; padding:20px; }
+#statement-dialog { background:var(--bg-surface); color:var(--text-primary); border:1px solid var(--border-hairline); border-radius:18px; width:min(720px,calc(100% - 20px)); max-height:85dvh; margin:auto; padding:20px; }
 #statement-dialog::backdrop { background:#10203399; }
 #statement-dialog h2 { font-size:20px; font-weight:700; }
 #statement-dialog p { font-size:14px; color:var(--text-secondary); margin:.45rem 0; }
+.review-card { margin:16px 0; padding:12px; min-width:0; border:1px solid var(--border-hairline); border-radius:12px; }
+.review-card legend { padding:0 6px; font-weight:700; }
+.review-card-target,.review-fields label,#review-owner { display:grid; gap:4px; font-size:13px; }
+.review-fields { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%, 150px),1fr)); gap:8px 12px; margin:10px 0; }
+.review-fields input { width:100%; }
+#statement-dialog [hidden] { display:none; }
 .review-row { display:grid; gap:7px; padding:14px 0; border-top:1px solid var(--border-hairline); }
 .review-row label { display:grid; gap:3px; font-size:13px; }
 .review-row label:first-child { display:block; font-weight:600; font-size:15px; }
