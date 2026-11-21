@@ -130,6 +130,7 @@
         <button type="button" data-view="transactions" title="Extrato e rendas" class="rail-btn w-9 h-9 rounded-xl flex items-center justify-center text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"><i data-lucide="arrow-left-right" class="w-4 h-4"></i></button>
         <button type="button" data-view="investments" title="Investimentos" class="rail-btn w-9 h-9 rounded-xl flex items-center justify-center text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"><i data-lucide="trending-up" class="w-4 h-4"></i></button>
         <button type="button" data-view="market" title="Mercado e notícias" class="rail-btn w-9 h-9 rounded-xl flex items-center justify-center text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"><i data-lucide="newspaper" class="w-4 h-4"></i></button>
+<button type="button" data-view="imports" title="Importação" class="rail-btn w-9 h-9 rounded-xl flex items-center justify-center"><i data-lucide="download" class="w-4 h-4"></i></button>
         <button type="button" data-view="settings" title="Pessoas e ajustes" class="rail-btn w-9 h-9 rounded-xl flex items-center justify-center text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"><i data-lucide="sliders-horizontal" class="w-4 h-4"></i></button>
       </div>
       <div class="flex flex-col items-center gap-2">
@@ -174,6 +175,7 @@
           <span class="flex items-center gap-2.5"><i data-lucide="newspaper" class="w-4 h-4"></i>Mercado e notícias</span>
           <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
         </button>
+<button type="button" data-view="imports" class="nav-btn w-full px-2.5 py-2 rounded-xl text-xs flex gap-2.5"><i data-lucide="download" class="w-4 h-4"></i>Importação</button>
         <button type="button" data-view="settings" class="nav-btn w-full px-2.5 py-2 rounded-xl text-xs flex items-center justify-between text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/70 transition">
           <span class="flex items-center gap-2.5"><i data-lucide="users" class="w-4 h-4"></i>Pessoas e ajustes</span>
         </button>
@@ -278,7 +280,7 @@
                   </div>
                   <div class="mt-4 flex items-baseline gap-2">
                     <span id="cap-spent" class="text-2xl font-extrabold tabular-nums">R$ 0,00</span>
-                    <span id="cap-total-label" class="text-xs text-zinc-400">de R$ 12.000,00</span>
+                    <span id="cap-total-label" class="text-xs text-zinc-400">Defina o teto</span>
                   </div>
                   <div class="grid grid-cols-3 gap-2 mt-4 text-xs">
                     <div>
@@ -353,6 +355,7 @@
               </div>
             </div>
 
+            <button class="bill-btn" type="button" data-view="settings">Cadastrar cartão</button>
             <div id="cards-selector" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -485,15 +488,15 @@
                 <div class="lg:col-span-4 space-y-3">
                   <div>
                     <label for="calc-initial" class="block text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 mb-1">Patrimônio inicial (R$)</label>
-                    <input id="calc-initial" type="number" min="0" step="1000" value="183360.90" class="w-full h-9 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28] text-sm font-bold tabular-nums" />
+                    <input id="calc-initial" type="number" min="0" step="1000" value="0" class="w-full h-9 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28] text-sm font-bold tabular-nums" />
                   </div>
                   <div>
                     <div class="flex justify-between text-[11px] font-semibold mb-1">
                       <label for="calc-monthly" class="text-zinc-500 dark:text-zinc-400">Aporte mensal projetado (R$)</label>
                       <span id="calc-monthly-badge" class="text-blue-600 dark:text-blue-400 tabular-nums">R$ 5.000</span>
                     </div>
-                    <input id="calc-monthly" type="number" min="0" step="250" value="5000" class="w-full h-9 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28] text-sm font-bold tabular-nums" />
-                    <input id="calc-monthly-range" type="range" min="0" max="40000" step="500" value="5000" class="w-full mt-1.5 accent-blue-600" />
+                    <input id="calc-monthly" type="number" min="0" step="250" value="0" class="w-full h-9 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28] text-sm font-bold tabular-nums" />
+                    <input id="calc-monthly-range" type="range" min="0" max="40000" step="500" value="0" class="w-full mt-1.5 accent-blue-600" />
                   </div>
                   <div>
                     <div class="flex justify-between text-[11px] font-semibold mb-1">
@@ -608,8 +611,46 @@
             </div>
           </section>
 
+          <section id="view-imports" class="hidden space-y-5">
+            <div><h2 class="text-xl font-bold">Importação</h2><p class="text-sm mt-1 text-zinc-500">Escolha quais dados entram no seu painel.</p></div>
+            <div class="card rounded-2xl p-5 space-y-4">
+              <div class="flex items-center justify-between flex-wrap gap-3"><h3 class="font-bold">Meu Pluggy</h3><a class="bill-btn" href="https://meu.pluggy.ai/" target="_blank" rel="noopener noreferrer">Abrir Meu Pluggy</a></div>
+              <p id="pg-setup" class="text-sm"></p>
+              <a id="pg-worker-settings" class="text-sm underline" target="_blank" rel="noopener noreferrer" href="https://dash.cloudflare.com/b4c489d73004381883e4c2d11b656b1e/workers/services/view/financas-pessoais/production/settings">Configurar credenciais no Worker</a>
+              <form id="pg-form" class="space-y-3">
+                <fieldset class="space-y-2"><legend class="text-sm font-bold mb-1">Dados a atualizar</legend>
+                  <label class="pg-option"><input type="checkbox" name="accounts" checked> Saldos de contas</label>
+                  <label class="pg-option"><input type="checkbox" name="cards"> Cartões de crédito <small>Cadastro e saldo informado pelo banco</small></label>
+                  <label class="pg-option"><input type="checkbox" name="investments" checked> Investimentos</label>
+                </fieldset>
+                <label class="block text-sm">Conexões do Meu Pluggy <textarea name="itemIds" class="bill-field block w-full mt-1" rows="2" placeholder="Um itemId por banco autorizado"></textarea></label>
+                <a class="text-sm underline" href="https://meu.pluggy.ai/api-guide" target="_blank" rel="noopener noreferrer">Onde encontrar os IDs de conexão</a>
+                <label class="pg-option"><input type="checkbox" name="auto"> Atualizar automaticamente todos os dias</label>
+                <p class="text-xs text-zinc-500">Desmarcar uma categoria pausa as próximas leituras e mantém a última posição importada. Os valores são em reais.</p>
+                <div class="bill-toolbar"><button class="bill-btn" type="submit">Salvar preferências</button><button class="bill-btn bill-primary" type="button" id="pg-sync" disabled>Sincronizar agora</button></div>
+              </form>
+              <p id="pg-history" class="text-xs text-zinc-500"></p><p id="pg-status" role="status" class="text-sm"></p>
+            </div>
+            <div class="card rounded-2xl p-5 space-y-2"><h3 class="font-bold">Aplicações importadas</h3>
+              <p class="text-sm text-zinc-500">Marque as aplicações que devem compor o patrimônio.</p><div id="pg-assets"></div><p id="pg-total" class="font-semibold"></p>
+            </div>
+            <button type="button" class="bill-btn" data-view="cards">Importar fatura de cartão em PDF</button>
+            <button type="button" class="bill-btn" data-view="settings">Cadastros manuais e ajustes</button>
+          </section>
           <!-- VIEW: SETTINGS & PEOPLE -->
           <section id="view-settings" class="hidden space-y-5">
+            <div class="card rounded-2xl p-5 space-y-3">
+              <h3 class="font-bold">Cadastrar do zero</h3><p id="manual-list" class="text-sm"></p>
+              <form id="manual-add" class="space-y-2">
+                <label>Tipo <select class="bill-field" name="kind"><option value="account">Conta bancária</option><option value="card">Cartão</option></select></label>
+                <label>Nome <input required maxlength="100" class="bill-field" name="name"></label>
+                <label id="manual-balance">Saldo inicial <input class="bill-field" type="number" step="0.01" name="balance" value="0"></label>
+                <div id="manual-card" hidden><label>Final <input name="last4" class="bill-field" pattern="[0-9]{4}" maxlength="4"></label>
+                <label>Dia de fechamento <input type="number" name="closing" min="1" max="31" class="bill-field"></label>
+                <label>Dia de vencimento <input type="number" name="due" min="1" max="31" class="bill-field"></label></div>
+                <button class="bill-btn" type="submit">Cadastrar</button>
+              </form>
+            </div>
             <div>
               <h2 class="text-base font-bold">Pessoas, contas e taxas macro</h2>
               <p class="text-xs text-zinc-500 dark:text-zinc-400">Ajuste quem compartilha cartões, saldos das contas e parâmetros de CDI/IPCA/IR.</p>
@@ -645,10 +686,9 @@
                 </form>
 
                 <div class="pt-4 border-t hairline space-y-2">
-                  <h4 class="text-xs font-bold">Backup e restauração</h4>
+                  <h4 class="text-xs font-bold">Backup</h4>
                   <div class="flex flex-wrap gap-2">
                     <button type="button" id="btn-export-json" class="h-8 px-3 rounded-lg border hairline text-xs font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-800">Exportar JSON</button>
-                    <button type="button" id="btn-reset-demo" class="h-8 px-3 rounded-lg border border-rose-200 dark:border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-semibold hover:bg-rose-50 dark:hover:bg-rose-500/10">Restaurar dados iniciais</button>
                   </div>
                 </div>
               </div>
@@ -696,7 +736,7 @@
             <div class="h-2.5 w-full rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
               <div id="right-cap-bar" class="h-full rounded-full" style="width:0%;background:linear-gradient(90deg,#F472B6 0%,#8B5CF6 48%,#3B82F6 100%);"></div>
             </div>
-            <p id="right-cap-detail" class="text-[11px] text-zinc-400 tabular-nums">R$ 0 de R$ 12.000</p>
+            <p id="right-cap-detail" class="text-[11px] text-zinc-400 tabular-nums">Teto ainda não definido</p>
           </div>
 
           <!-- Upcoming Due Dates -->
@@ -721,11 +761,12 @@
   </div>
 
   <!-- Mobile Bottom Navigation -->
-  <nav id="mobile-nav" aria-label="Navegação principal" class="md:hidden fixed bottom-0 inset-x-0 z-30 h-14 border-t hairline bg-white/95 dark:bg-[#12141B]/95 backdrop-blur grid grid-cols-5 text-[10px] font-medium">
+  <nav id="mobile-nav" aria-label="Navegação principal" class="md:hidden fixed bottom-0 inset-x-0 z-30 h-14 border-t hairline bg-white/95 dark:bg-[#12141B]/95 backdrop-blur grid grid-cols-6 text-[10px] font-medium">
     <button type="button" data-view="dashboard" class="flex flex-col items-center justify-center gap-0.5"><i data-lucide="layout-dashboard" class="w-4 h-4"></i>Resumo</button>
     <button type="button" data-view="cards" class="flex flex-col items-center justify-center gap-0.5 text-zinc-500"><i data-lucide="credit-card" class="w-4 h-4"></i>Cartões</button>
     <button type="button" data-view="investments" class="flex flex-col items-center justify-center gap-0.5 text-zinc-500"><i data-lucide="trending-up" class="w-4 h-4"></i>Invest.</button>
     <button type="button" data-view="market" class="flex flex-col items-center justify-center gap-0.5 text-zinc-500"><i data-lucide="newspaper" class="w-4 h-4"></i>Mercado</button>
+<button type="button" data-view="imports" class="flex flex-col items-center justify-center"><i data-lucide="download" class="w-4 h-4"></i>Importar</button>
     <button type="button" data-view="transactions" class="flex flex-col items-center justify-center gap-0.5 text-zinc-500"><i data-lucide="arrow-left-right" class="w-4 h-4"></i>Extrato</button>
   </nav>
 
@@ -777,7 +818,7 @@
         <button type="button" data-close-modal="modal-settle" class="p-1 text-zinc-400"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       <form id="form-settle" class="space-y-3">
-        <select id="set-person" class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28] text-xs font-semibold"></select>
+        <select required id="set-person" class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28] text-xs font-semibold"></select>
         <div class="grid grid-cols-2 gap-2">
           <select id="set-type" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28] text-xs">
             <option value="repayment">Reembolso recebido</option>
@@ -817,7 +858,7 @@
         <input id="btx-desc" type="text" required placeholder="Descrição" class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28] text-sm" />
         <div class="grid grid-cols-2 gap-2">
           <select id="btx-cat" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28] text-xs"></select>
-          <select id="btx-acc" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28] text-xs"></select>
+          <select required id="btx-acc" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28] text-xs"></select>
         </div>
         <button type="submit" class="w-full h-10 rounded-xl bg-emerald-600 text-white text-sm font-semibold">Salvar</button>
       </form>
@@ -834,7 +875,7 @@
           <input id="sal-amount" type="number" step="0.01" min="1" required placeholder="Valor R$" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28] text-sm font-bold" />
           <input id="sal-day" type="number" min="1" max="31" value="5" required placeholder="Dia" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28] text-sm" />
         </div>
-        <select id="sal-acc" class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28] text-xs"></select>
+        <select required id="sal-acc" class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28] text-xs"></select>
         <button type="submit" class="w-full h-10 rounded-xl bg-blue-600 text-white text-sm font-semibold">Salvar</button>
       </form>
     </div>
@@ -911,7 +952,8 @@
 
   <script>
     (function () {
-      const STORAGE_KEY = 'financas_pessoais_v3_state';
+      const STORAGE_KEY = 'financas_pessoais_fresh_20261121';
+      try { localStorage.removeItem('financas_pessoais_v3_state'); } catch {}
       const monthLabel = key => new Intl.DateTimeFormat('pt-BR', { month: 'short', year: 'numeric' }).format(new Date(key + '-15T12:00:00'));
       const CATEGORIES = ['Alimentação', 'Moradia', 'Saúde', 'Educação', 'Transporte', 'Lazer', 'Compras', 'Assinaturas', 'Salário', 'Extra', 'Outros'];
 
@@ -930,55 +972,10 @@
       function getDefaultState() {
         return {
           theme: 'light',
-          monthlyBudgetCap: 12000,
+          monthlyBudgetCap: 0,
           marketRates: { cdi: 13.65, ipca: 4.5, irRate: 0.175 },
-          accounts: [
-            { id: 'acc_itau', name: 'Itaú Personnalité', balance: 22350.0, color: '#3B82F6' },
-            { id: 'acc_nu', name: 'Conta Nubank', balance: 14820.5, color: '#8B5CF6' },
-            { id: 'acc_cash', name: 'Espécie', balance: 1850.0, color: '#10B981' },
-          ],
-          cards: [
-            { id: 'card_nu', name: 'Nubank Ultravioleta', institution: 'Nubank', last4: '8412', limit: 28000, closeDay: 4, dueDay: 11 },
-            { id: 'card_itau', name: 'Itaú Black', institution: 'Itaú', last4: '3390', limit: 35000, closeDay: 15, dueDay: 22 },
-            { id: 'card_res', name: 'Cartão Reserva', institution: 'Manual', last4: '1044', limit: 8000, closeDay: 10, dueDay: 18 },
-          ],
-          people: [
-            { id: 'p_italo', name: 'Ítalo', role: 'Titular', isOwner: true },
-            { id: 'p_marcelly', name: 'Marcelly', role: 'Dependente', isOwner: false },
-            { id: 'p_palace', name: 'Açougue', role: 'Negócio', isOwner: false },
-            { id: 'p_sogra', name: 'Sogra', role: 'Família', isOwner: false },
-          ],
-          cardPurchases: [
-            { id: 'cp_01', cardId: 'card_nu', date: '2026-11-08', startMonth: '2026-11', description: 'Supermercado Zona Sul', category: 'Alimentação', totalCents: 120000, installments: 1, splits: [{ personId: 'p_italo', cents: 80000 }, { personId: 'p_sogra', cents: 40000 }] },
-            { id: 'cp_02', cardId: 'card_nu', date: '2026-11-10', startMonth: '2026-11', description: 'Shopping Barra — Roupas', category: 'Compras', totalCents: 90000, installments: 3, splits: [{ personId: 'p_marcelly', cents: 90000 }] },
-            { id: 'cp_03', cardId: 'card_itau', date: '2026-11-12', startMonth: '2026-11', description: 'Embalagens Açougue', category: 'Compras', totalCents: 240000, installments: 4, splits: [{ personId: 'p_palace', cents: 240000 }] },
-            { id: 'cp_04', cardId: 'card_nu', date: '2026-11-14', startMonth: '2026-11', description: 'Drogaria Venancio', category: 'Saúde', totalCents: 46000, installments: 2, splits: [{ personId: 'p_sogra', cents: 46000 }] },
-            { id: 'cp_05', cardId: 'card_itau', date: '2026-11-16', startMonth: '2026-11', description: 'Jantar em Família', category: 'Lazer', totalCents: 60000, installments: 1, splits: [{ personId: 'p_italo', cents: 30000 }, { personId: 'p_marcelly', cents: 30000 }] },
-            { id: 'cp_06', cardId: 'card_res', date: '2026-11-17', startMonth: '2026-11', description: 'Posto Ipiranga', category: 'Transporte', totalCents: 35000, installments: 1, splits: [{ personId: 'p_italo', cents: 35000 }] },
-          ],
-          personEvents: [
-            { id: 'ev_01', personId: 'p_sogra', month: '2026-11', type: 'repayment', cents: 30000, date: '2026-11-15', accountId: 'acc_nu', note: 'Pix parcial do mercado' },
-            { id: 'ev_02', personId: 'p_palace', month: '2026-11', type: 'advance', cents: 40000, date: '2026-11-14', accountId: 'acc_itau', note: 'Adiantamento caixa loja' },
-            { id: 'ev_03', personId: 'p_marcelly', month: '2026-11', type: 'refund', cents: 8500, date: '2026-11-18', accountId: null, note: 'Estorno peça devolvida' },
-          ],
-          fixedIncomes: [
-            { id: 'fi_01', title: 'Pró-labore Palace Carnes', amount: 15000, payDay: 5, accountId: 'acc_itau', receivedMonths: { '2026-11': true } },
-            { id: 'fi_02', title: 'Retirada Multi Frutti', amount: 3500, payDay: 10, accountId: 'acc_itau', receivedMonths: { '2026-11': true } },
-          ],
-          bankTransactions: [
-            { id: 'bt_01', date: '2026-11-05', description: 'Pró-labore Palace Carnes', type: 'income', category: 'Salário', accountId: 'acc_itau', amount: 15000 },
-            { id: 'bt_02', date: '2026-11-10', description: 'Retirada Multi Frutti', type: 'income', category: 'Salário', accountId: 'acc_itau', amount: 3500 },
-            { id: 'bt_03', date: '2026-11-12', description: 'Honorários Advocatícios', type: 'income', category: 'Extra', accountId: 'acc_nu', amount: 6400 },
-            { id: 'bt_04', date: '2026-11-06', description: 'Condomínio e IPTU', type: 'expense', category: 'Moradia', accountId: 'acc_itau', amount: 1980 },
-            { id: 'bt_05', date: '2026-11-10', description: 'Plano de Saúde Familiar', type: 'expense', category: 'Saúde', accountId: 'acc_itau', amount: 2390 },
-            { id: 'bt_06', date: '2026-11-14', description: 'Escola Infantil', type: 'expense', category: 'Educação', accountId: 'acc_itau', amount: 1850 },
-          ],
-          investments: [
-            { id: 'inv_01', name: 'Caixinha Reserva (CDB)', rateType: 'CDI', rateVal: 100, taxFree: false, gross: 49860.4 },
-            { id: 'inv_02', name: 'CDB Itaú 2028', rateType: 'CDI', rateVal: 108, taxFree: false, gross: 67420.0 },
-            { id: 'inv_03', name: 'LCI Liquidez 90d', rateType: 'CDI', rateVal: 93, taxFree: true, gross: 26900.0 },
-            { id: 'inv_04', name: 'Tesouro IPCA+ 2035', rateType: 'IPCA', rateVal: 6.45, taxFree: false, gross: 39180.5 },
-          ],
+          accounts: [], cards: [], people: [], cardPurchases: [], personEvents: [],
+    fixedIncomes: [], bankTransactions: [], investments: [],
         };
       }
 
@@ -994,8 +991,14 @@
       }
 
       let state = loadState();
+      let integration = null;
+      const imported = group => (integration?.positions || []).filter(p=>p.category===group);
+      const includedRemote = () => imported('investments').filter(p=>!p.excluded);
+      const allCards = () => [...new Map([...state.cards,...imported('cards')].map(c=>[c.id,c])).values()];
+      const allAccounts = () => [...state.accounts,...imported('accounts')];
+      const portfolio = () => [...state.investments,...includedRemote()];
       let currentView = 'dashboard';
-      let selectedCardId = state.cards[0]?.id || 'card_nu';
+      let selectedCardId = state.cards[0]?.id || '';
       let selectedPersonId = state.people.find((p) => !p.isOwner)?.id || state.people[0]?.id || 'p_italo';
       let newsFilter = 'all';
       let searchTerm = '';
@@ -1004,6 +1007,13 @@
       let marketData = { quotes: [], news: [], updatedAt: null };
 
       function saveState() {
+        // Preserve the local card reference for manual purchases and PDF statements.
+        const references = new Set(state.cardPurchases.map(p=>p.cardId));
+        for (const c of imported('cards')) {
+          if (references.has(c.id) && !state.cards.some(x=>x.id===c.id)) {
+            state.cards.push({id:c.id,name:c.name,institution:c.institution,last4:c.last4,limit:c.limit || 0,closeDay:Number(c.closeDay)||0,dueDay:Number(c.dueDay)||0});
+          }
+        }
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         } catch (e) {}
@@ -1016,8 +1026,8 @@
       const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       const getMonth = () => document.getElementById('global-month-filter').value;
       const getPerson = (id) => state.people.find((p) => p.id === id) || { id, name: 'Pessoa', role: '' };
-      const getCard = (id) => state.cards.find((c) => c.id === id) || { id, name: 'Cartão', last4: '0000' };
-      const getAccount = (id) => state.accounts.find((a) => a.id === id) || { id, name: 'Conta' };
+      const getCard = (id) => allCards().find((c) => c.id === id) || { id, name: 'Cartão', last4: '0000' };
+      const getAccount = (id) => allAccounts().find((a) => a.id === id) || { id, name: 'Conta' };
 
       function showToast(msg) {
         const el = document.getElementById('toast');
@@ -1128,7 +1138,7 @@
 
       function setView(v) {
         currentView = v;
-        ['dashboard', 'cards', 'transactions', 'investments', 'market', 'settings'].forEach((id) => {
+        ['dashboard', 'cards', 'transactions', 'investments', 'market', 'imports', 'settings'].forEach((id) => {
           const el = document.getElementById(`view-${id}`);
           if (el) el.classList.toggle('hidden', id !== v);
         });
@@ -1145,9 +1155,11 @@
           investments: 'Investimentos e projeção',
           market: 'Mercado e notícias',
           settings: 'Pessoas e ajustes',
+          imports: 'Importação',
         };
         document.getElementById('header-title').textContent = titles[v] || 'Resumo geral';
         renderAll();
+        if (v === 'imports') loadPluggy().catch(e=>{statusLine.textContent=e.message});
         if (v === 'market' && marketData.quotes.length === 0) fetchMarketData();
       }
 
@@ -1157,16 +1169,16 @@
       function renderSidebarAndRightPanel() {
         const mKey = getMonth();
         const mRows = getMonthInstallments(mKey);
-        const cash = state.accounts.reduce((s, a) => s + a.balance, 0);
-        const totalInv = state.investments.reduce((s, i) => s + i.gross, 0);
+        const cash = allAccounts().reduce((s, a) => s + a.balance, 0);
+        const totalInv = portfolio().reduce((s, i) => s + i.gross, 0);
         const ownCard = mRows.reduce((s, r) => s + (r.splits.find((x) => x.personId === 'p_italo')?.cents || 0), 0) / 100;
         const bankExp = state.bankTransactions.filter((t) => t.type === 'expense' && t.date.startsWith(mKey)).reduce((s, t) => s + t.amount, 0);
         const ownTotal = bankExp + ownCard;
-        const cap = Math.max(1, Number(state.monthlyBudgetCap) || 12000);
-        const capPct = Math.min(100, Math.round((ownTotal / cap) * 100));
+        const cap = Number(state.monthlyBudgetCap) || 0;
+        const capPct = cap ? Math.min(100, Math.round((ownTotal / cap) * 100)) : 0;
 
         document.getElementById('side-cnt-cards').textContent = String(mRows.length);
-        document.getElementById('side-cnt-inv').textContent = String(state.investments.length);
+        document.getElementById('side-cnt-inv').textContent = String(portfolio().length);
 
         const others = state.people.filter((p) => !p.isOwner);
         const colors = ['#3B82F6', '#8B5CF6', '#F59E0B', '#10B981'];
@@ -1187,10 +1199,10 @@
         document.getElementById('right-inv').textContent = fmtBRL(totalInv);
         document.getElementById('right-cap-pct').textContent = `${capPct}%`;
         document.getElementById('right-cap-bar').style.width = `${capPct}%`;
-        document.getElementById('right-cap-detail').textContent = `${fmtBRL(ownTotal)} de ${fmtBRL(cap)}`;
+        document.getElementById('right-cap-detail').textContent = cap ? `${fmtBRL(ownTotal)} de ${fmtBRL(cap)}` : "Teto ainda não definido";
 
         const upcoming = [
-          ...state.cards.map((c) => {
+          ...allCards().map((c) => {
             const bill = mRows.filter((r) => r.cardId === c.id).reduce((s, r) => s + r.fullCents, 0);
             return { title: `Fatura ${c.name}`, sub: `Vence dia ${c.dueDay} · Final ${c.last4}`, val: fmtCents(bill), color: 'bg-blue-500' };
           }),
@@ -1224,7 +1236,7 @@
       function renderDashboard() {
         const mKey = getMonth();
         const mRows = getMonthInstallments(mKey);
-        const cash = state.accounts.reduce((s, a) => s + a.balance, 0);
+        const cash = allAccounts().reduce((s, a) => s + a.balance, 0);
         const fullBill = mRows.reduce((s, r) => s + r.fullCents, 0);
         const ownCard = mRows.reduce((s, r) => s + (r.splits.find((x) => x.personId === 'p_italo')?.cents || 0), 0);
         const thirdCard = fullBill - ownCard;
@@ -1232,10 +1244,10 @@
         const totalRecv = others.reduce((s, p) => s + Math.max(0, computePersonLedger(p.id, mKey).remaining), 0);
         const bankExp = state.bankTransactions.filter((t) => t.type === 'expense' && t.date.startsWith(mKey)).reduce((s, t) => s + t.amount, 0);
         const bankInc = state.bankTransactions.filter((t) => t.type === 'income' && t.date.startsWith(mKey)).reduce((s, t) => s + t.amount, 0);
-        const totalInv = state.investments.reduce((s, i) => s + i.gross, 0);
+        const totalInv = portfolio().reduce((s, i) => s + i.gross, 0);
 
         document.getElementById('kpi-cash').textContent = fmtBRL(cash);
-        document.getElementById('kpi-cash-sub').textContent = `${state.accounts.length} contas · +${fmtBRL(bankInc)} entradas no mês`;
+        document.getElementById('kpi-cash-sub').textContent = `${allAccounts().length} contas · +${fmtBRL(bankInc)} entradas no mês`;
         document.getElementById('kpi-bill').textContent = fmtCents(fullBill);
         document.getElementById('kpi-bill-sub').textContent = `Seu: ${fmtCents(ownCard)} · Terceiros: ${fmtCents(thirdCard)}`;
         document.getElementById('kpi-recv').textContent = fmtCents(totalRecv);
@@ -1255,12 +1267,12 @@
         `).join('');
 
         // Capacity bar
-        const cap = Math.max(1, Number(state.monthlyBudgetCap) || 12000);
-        const pctBank = Math.min(100, Math.round((bankExp / cap) * 100));
-        const pctCard = Math.min(100 - pctBank, Math.round(((ownCard / 100) / cap) * 100));
-        const pctFree = Math.max(0, 100 - pctBank - pctCard);
+        const cap = Number(state.monthlyBudgetCap) || 0;
+        const pctBank = cap ? Math.min(100, Math.round((bankExp / cap) * 100)) : 0;
+        const pctCard = cap ? Math.min(100 - pctBank, Math.round(((ownCard / 100) / cap) * 100)) : 0;
+        const pctFree = cap ? Math.max(0, 100 - pctBank - pctCard) : 0;
         document.getElementById('cap-spent').textContent = fmtBRL(ownTotal);
-        document.getElementById('cap-total-label').textContent = `de ${fmtBRL(cap)}`;
+        document.getElementById('cap-total-label').textContent = cap ? `de ${fmtBRL(cap)}` : "Defina o teto";
         document.getElementById('cap-pct-bank').textContent = `${pctBank}%`;
         document.getElementById('cap-pct-card').textContent = `${pctCard}%`;
         document.getElementById('cap-pct-free').textContent = `${pctFree}%`;
@@ -1340,7 +1352,8 @@
       function renderCardsView() {
         const mKey = getMonth();
         const mRows = getMonthInstallments(mKey);
-        document.getElementById('cards-selector').innerHTML = state.cards.map((c) => {
+        if (!allCards().some(c=>c.id===selectedCardId)) selectedCardId = allCards()[0]?.id || '';
+        document.getElementById('cards-selector').innerHTML = allCards().map((c) => {
           const bill = mRows.filter((r) => r.cardId === c.id).reduce((s, r) => s + r.fullCents, 0);
           const active = c.id === selectedCardId;
           return `
@@ -1350,6 +1363,7 @@
                 <span class="text-[10px] text-zinc-400">•••• ${esc(c.last4)}</span>
               </div>
               <p class="text-lg font-extrabold mt-2 tabular-nums">${fmtCents(bill)}</p>
+              ${c.bankBalance != null ? '<p class="text-xs">Saldo do cartão na Pluggy: ' + fmtBRL(c.bankBalance) + '</p>' : ''}
               <p class="text-[11px] text-zinc-400 mt-0.5">Fecha dia ${c.closeDay} · Vence dia ${c.dueDay}</p>
             </button>
           `;
@@ -1534,39 +1548,41 @@
       }
 
       function renderInvestmentsView() {
-        const totalGross = state.investments.reduce((s, i) => s + i.gross, 0);
+        const totalGross = portfolio().reduce((s, i) => s + i.gross, 0);
         const enriched = state.investments.map((i) => ({ ...i, m: computeInvMetrics(i) }));
         const totalMonthNet = enriched.reduce((s, x) => s + x.m.monthNet, 0);
         const totalYearNet = enriched.reduce((s, x) => s + x.m.yearNet, 0);
-        const weightedNetAnn = totalGross > 0 ? (totalYearNet / totalGross) * 100 : 0;
+        const projected = enriched.reduce((s,x)=>s+x.gross,0);
+        const weightedNetAnn = projected > 0 ? totalYearNet / projected * 100 : 0;
         const ipca = Number(state.marketRates.ipca) || 4.5;
-        const weightedRealAnn = ((1 + weightedNetAnn / 100) / (1 + ipca / 100) - 1) * 100;
+        const weightedRealAnn = projected ? ((1 + weightedNetAnn / 100) / (1 + ipca / 100) - 1) * 100 : 0;
         const taxFreeTotal = state.investments.filter((i) => i.taxFree).reduce((s, i) => s + i.gross, 0);
         const taxFreePct = totalGross > 0 ? Math.round((taxFreeTotal / totalGross) * 100) : 0;
 
         document.getElementById('inv-kpi-total').textContent = fmtBRL(totalGross);
-        document.getElementById('inv-kpi-count').textContent = `${state.investments.length} ativo(s) cadastrado(s)`;
+        document.getElementById('inv-kpi-count').textContent = `${portfolio().length} ativo(s) cadastrado(s)`;
         document.getElementById('inv-kpi-month').textContent = `+${fmtBRL(totalMonthNet)}`;
         document.getElementById('inv-kpi-year').textContent = `+${fmtBRL(totalYearNet)}`;
-        document.getElementById('inv-kpi-rate').textContent = `Média líquida ${weightedNetAnn.toFixed(2)}% a.a.`;
+        document.getElementById('inv-kpi-rate').textContent = `Ativos com taxa cadastrada · ${weightedNetAnn.toFixed(2)}% a.a.`;
         document.getElementById('inv-kpi-real').textContent = `+${weightedRealAnn.toFixed(2)}% a.a.`;
         document.getElementById('inv-kpi-taxfree').textContent = `${taxFreePct}% isento de IR`;
 
         // Smart automatic insights
-        const topAsset = [...enriched].sort((a, b) => b.gross - a.gross)[0];
+        const topAsset = [...portfolio()].sort((a, b) => b.gross - a.gross)[0];
         const topConc = topAsset && totalGross > 0 ? Math.round((topAsset.gross / totalGross) * 100) : 0;
-        const monthlyCap = Number(state.monthlyBudgetCap) || 12000;
+        const monthlyCap = Number(state.monthlyBudgetCap) || 0;
         const reserveMonths = (totalGross / Math.max(1, monthlyCap)).toFixed(1);
         const cdi = Number(state.marketRates.cdi) || 13.65;
         const irDef = Number(state.marketRates.irRate) || 0.175;
         const lciEquivCdb = (93 / (1 - irDef)).toFixed(1);
-        const extra1k10y = 1000 * ((Math.pow(1 + (weightedNetAnn / 100) / 12, 120) - 1) / Math.max(0.0001, (weightedNetAnn / 100) / 12));
+        const monthlyRate = weightedNetAnn / 1200;
+        const extra1k10y = monthlyRate ? 1000 * Math.expm1(120 * Math.log1p(monthlyRate)) / monthlyRate : 120000;
 
         const insights = [
           {
             title: 'Cobertura de reserva',
             tone: 'text-emerald-600 dark:text-emerald-400',
-            body: `Seu patrimônio investido cobre ${reserveMonths} meses do seu teto mensal (${fmtBRL(monthlyCap)}). Acima de 6 meses já permite alongar prazos buscando taxas maiores.`,
+            body: !monthlyCap ? "Defina um teto mensal para calcular a cobertura da sua reserva." : `Seu patrimônio investido cobre ${reserveMonths} meses do seu teto mensal (${fmtBRL(monthlyCap)}). Acima de 6 meses já permite alongar prazos buscando taxas maiores.`,
           },
           {
             title: 'Eficiência tributária (LCI/LCA)',
@@ -1576,7 +1592,8 @@
           {
             title: 'Concentração e efeito aporte',
             tone: 'text-violet-600 dark:text-violet-400',
-            body: `${topAsset ? `${topAsset.name} concentra ${topConc}% da carteira.` : ''} Aumentar apenas R$ 1.000/mês no aporte adiciona cerca de ${fmtBRL(extra1k10y)} em 10 anos na taxa líquida atual.`,
+            body: [topAsset && `${topAsset.name} concentra ${topConc}% da carteira.`,
+              projected ? `Um aporte de R$ 1.000/mês acumula cerca de ${fmtBRL(extra1k10y)} em 10 anos na taxa estimada dos ativos com taxa cadastrada.` : 'Cadastre uma taxa para simular rendimentos.'].filter(Boolean).join(' '),
           },
         ];
 
@@ -1612,6 +1629,9 @@
           </div>
         `).join('');
 
+        const remote = includedRemote();
+        document.getElementById('inv-assets-list').insertAdjacentHTML('beforeend', remote.map(a=>`<div class="pg-option pg-invest"><span>${esc(a.name)}<small>Meu Pluggy · ${esc(a.detail)}</small></span><b>${fmtBRL(a.gross)}</b></div>`).join(''));
+        if (remote.length) document.getElementById('inv-alloc-summary').textContent += ' · Meu Pluggy ' + fmtBRL(remote.reduce((s,a)=>s+a.gross,0));
         runInvestmentCalculator();
       }
 
@@ -1717,6 +1737,8 @@
       }
 
       function renderSettingsView() {
+        document.getElementById('btn-new-person').textContent = state.people.length ? '+ Nova pessoa' : 'Cadastrar titular';
+        document.getElementById('manual-list').textContent = [...allAccounts(), ...allCards()].map(x=>x.name).join(' · ') || 'Nenhuma conta ou cartão cadastrado.';
         document.getElementById('settings-people-list').innerHTML = state.people.map((p) => `
           <div class="py-2.5 flex items-center justify-between">
             <div><p class="text-xs font-semibold">${esc(p.name)}</p><p class="text-[11px] text-zinc-400">${esc(p.role)}</p></div>
@@ -1729,12 +1751,12 @@
       }
 
       function populateSelects() {
-        document.getElementById('cp-card').innerHTML = state.cards.map((c) => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+        document.getElementById('cp-card').innerHTML = allCards().map((c) => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
         document.getElementById('cp-cat').innerHTML = CATEGORIES.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
         document.getElementById('btx-cat').innerHTML = CATEGORIES.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-        document.getElementById('btx-acc').innerHTML = state.accounts.map((a) => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('');
-        document.getElementById('sal-acc').innerHTML = state.accounts.map((a) => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('');
-        document.getElementById('set-account').innerHTML = state.accounts.map((a) => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('');
+        document.getElementById('btx-acc').innerHTML = allAccounts().map((a) => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('');
+        document.getElementById('sal-acc').innerHTML = allAccounts().map((a) => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('');
+        document.getElementById('set-account').innerHTML = allAccounts().map((a) => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join('');
         document.getElementById('set-person').innerHTML = state.people.filter((p) => !p.isOwner).map((p) => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
       }
 
@@ -1754,6 +1776,7 @@
       }
 
       function openPurchaseModal() {
+        if (!allCards().length || !state.people.length) { setView('settings'); showToast('Cadastre o titular e um cartão para lançar compras.'); return; }
         populateSelects();
         document.getElementById('form-purchase').reset();
         if (currentView === 'cards') document.getElementById('cp-card').value = selectedCardId;
@@ -1812,12 +1835,89 @@
         if (button) goToMonth(button.dataset.billMonth);
       };
 
+      const pgForm = document.getElementById('pg-form');
+      const statusLine = document.getElementById('pg-status');
+      let preferencesDirty = false;
+      pgForm.oninput = () => { preferencesDirty = true; };
+      const pgGroups = ['accounts','cards','investments','auto'];
+      async function pgApi(action, body) {
+        const options = body === undefined ? {} : {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)};
+        const res = await fetch('/api/pluggy/' + action, options);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Falha ao acessar a integração.');
+        return data;
+      }
+      function pgSummary() {
+        const assets = imported('investments');
+        document.getElementById('pg-assets').innerHTML = assets.map(a => `
+          <label class="pg-option pg-invest"><input type="checkbox" data-position="${esc(a.id)}" ${a.excluded ? '' : 'checked'}>
+          <span>${esc(a.name)}<small>${esc(a.detail)}</small></span><b>${fmtBRL(a.gross)}</b></label>`).join('') ||
+          '<p class="text-sm py-3">Nenhuma aplicação importada.</p>';
+        document.getElementById('pg-total').textContent = 'Contabilizado: ' + fmtBRL(includedRemote().reduce((s,i)=>s+i.gross,0));
+      }
+      function renderImport() {
+        if (!integration) return;
+        const {ready, protectedApp, prefs, last_sync, status} = integration;
+        const saved = localStorage.getItem('pg-draft-v1');
+        const config = saved ? {...prefs,...JSON.parse(saved)} : prefs;
+        if (!preferencesDirty) {
+          for (const key of pgGroups) pgForm.elements.namedItem(key).checked = config[key];
+          pgForm.elements.itemIds.value = prefs.itemIds.join('\n');
+        }
+        pgForm.elements.itemIds.disabled = !protectedApp;
+        document.getElementById('pg-sync').disabled = !ready;
+        document.getElementById('pg-worker-settings').hidden = ready;
+        document.getElementById('pg-setup').textContent = ready ? 'Conecte seus bancos no Meu Pluggy e informe os IDs da aplicação.' :
+          'Para ativar a conexão, configure os secrets APP_PASSWORD, PLUGGY_CLIENT_ID e PLUGGY_CLIENT_SECRET no Worker financas-pessoais. Depois entre no app e salve os IDs dos bancos.';
+        document.getElementById('pg-history').textContent = status || (last_sync ? 'Última atualização: ' + new Date(last_sync).toLocaleString('pt-BR') : 'Nenhuma sincronização realizada.');
+        pgSummary();
+      }
+      async function loadPluggy() {
+        integration = await pgApi('status');
+        if (!allCards().some(c=>c.id===selectedCardId)) selectedCardId=allCards()[0]?.id || '';
+        renderImport(); populateSelects(); renderAll();
+      }
+      async function savePluggy() {
+        const prefs = Object.fromEntries(pgGroups.map(k=>[k,pgForm.elements.namedItem(k).checked]));
+        if (!integration?.protectedApp) {
+          localStorage.setItem('pg-draft-v1',JSON.stringify(prefs));
+          preferencesDirty = false; return false;
+        }
+        prefs.itemIds = pgForm.elements.itemIds.value.trim().split(/[\s,;]+/).filter(Boolean);
+        await pgApi('preferences',prefs);
+        localStorage.removeItem('pg-draft-v1'); preferencesDirty=false;
+        return true;
+      }
+      pgForm.onsubmit = async event => {
+        event.preventDefault();
+        try { const saved = await savePluggy(); await loadPluggy(); statusLine.textContent = saved ? 'Preferências salvas.' : 'Preferências salvas neste navegador. Ative a conexão para sincronizar.'; }
+        catch(e){statusLine.textContent=e.message;}
+      };
+      document.getElementById('pg-sync').onclick = async event => {
+        event.target.disabled = true; statusLine.textContent='Consultando a Pluggy…';
+        try {
+          if (preferencesDirty || localStorage.getItem('pg-draft-v1')) await savePluggy();
+          await pgApi('sync',{}); await loadPluggy();
+          statusLine.textContent='Dados atualizados.';
+        } catch(e) {statusLine.textContent=e.message;} finally {event.target.disabled=!integration?.ready;}
+      };
+      document.getElementById('pg-assets').onchange = async event => {
+        const el=event.target;
+        if (!el.dataset.position) return;
+        el.disabled=true;
+        try {
+          await pgApi('inclusion',{id:el.dataset.position,included:el.checked});
+          await loadPluggy();
+          statusLine.textContent='Seleção do patrimônio atualizada.';
+        } catch(e) {el.checked=!el.checked;el.disabled=false;statusLine.textContent=e.message;}
+      };
+
       const review = document.getElementById('statement-dialog');
       const pdfInput = document.getElementById('statement-file');
       const readButton = document.getElementById('read-statement');
       const pdfStatus = document.getElementById('pdf-status');
       let draft;
-      readButton.onclick = () => { pdfInput.value = ''; pdfInput.click(); };
+      readButton.onclick = () => { if (!allCards().length || !state.people.length) { setView('settings'); showToast('Cadastre o cartão e o titular para importar a fatura.'); return; } pdfInput.value = ''; pdfInput.click(); };
       document.getElementById('review-cancel').onclick = () => review.close();
       pdfInput.onchange = async () => {
         const file = pdfInput.files[0];
@@ -1941,6 +2041,24 @@
         if (!desktopNav.contains(event.target)) hideDrawer();
       });
 
+      const manual = document.getElementById('manual-add');
+      manual.elements.kind.onchange = () => {
+        const card = manual.elements.kind.value === 'card';
+        document.getElementById('manual-balance').hidden = card;
+        document.getElementById('manual-card').hidden = !card;
+        for (const field of ['last4','closing','due']) manual.elements[field].required = card;
+      };
+      manual.onsubmit = event => {
+        event.preventDefault();
+        const data = new FormData(manual), name = String(data.get('name')).trim(), id=crypto.randomUUID();
+        if (!name) return;
+        if (data.get('kind') === 'card') {
+          state.cards.push({id,name,institution:'Manual',last4:data.get('last4'),limit:0,closeDay:Number(data.get('closing')),dueDay:Number(data.get('due'))});
+          selectedCardId = id;
+        } else state.accounts.push({id,name,balance:Number(data.get('balance')),color:'#2563eb'});
+        manual.reset(); manual.elements.kind.onchange();
+        saveState(); populateSelects(); renderAll(); showToast('Cadastro salvo.');
+      };
       // Event bindings
       document.addEventListener('click', (e) => {
         const viewBtn = e.target.closest('[data-view]');
@@ -2048,7 +2166,7 @@
       document.getElementById('btn-open-purchase').addEventListener('click', openPurchaseModal);
       document.getElementById('side-btn-new-purchase').addEventListener('click', openPurchaseModal);
       document.getElementById('cards-btn-new').addEventListener('click', openPurchaseModal);
-      document.getElementById('btn-add-split-row').addEventListener('click', () => addSplitRow('p_marcelly', ''));
+      document.getElementById('btn-add-split-row').addEventListener('click', () => addSplitRow(state.people.find(p => !p.isOwner)?.id || state.people[0]?.id, ''));
 
       document.getElementById('btn-open-settle').addEventListener('click', () => { populateSelects(); openModal('modal-settle'); });
       document.getElementById('cards-btn-settle').addEventListener('click', () => { populateSelects(); openModal('modal-settle'); });
@@ -2182,11 +2300,12 @@
 
       document.getElementById('form-person').addEventListener('submit', (e) => {
         e.preventDefault();
+        const isOwner = !state.people.some(p=>p.isOwner);
         state.people.push({
-          id: `p_${Date.now()}`,
+          id: isOwner ? 'p_italo' : crypto.randomUUID(),
           name: document.getElementById('person-name').value.trim(),
-          role: document.getElementById('person-role').value,
-          isOwner: false,
+          role: isOwner ? 'Titular' : document.getElementById('person-role').value,
+          isOwner,
         });
         saveState(); closeModal('modal-person'); populateSelects(); renderAll(); showToast('Pessoa cadastrada.');
       });
@@ -2216,11 +2335,6 @@
         showToast('Backup JSON baixado.');
       });
 
-      document.getElementById('btn-reset-demo').addEventListener('click', () => {
-        state = getDefaultState();
-        saveState(); populateSelects(); renderAll(); showToast('Dados iniciais restaurados.');
-      });
-
       // Calculator reactive bindings
       ['calc-initial', 'calc-monthly', 'calc-years', 'calc-rate', 'calc-ipca', 'calc-ir'].forEach((id) => {
         document.getElementById(id).addEventListener('input', () => {
@@ -2233,7 +2347,7 @@
         runInvestmentCalculator();
       });
       document.getElementById('calc-use-portfolio').addEventListener('click', () => {
-        const total = state.investments.reduce((s, i) => s + i.gross, 0);
+        const total = portfolio().reduce((s, i) => s + i.gross, 0);
         document.getElementById('calc-initial').value = total.toFixed(2);
         runInvestmentCalculator();
       });
@@ -2241,7 +2355,10 @@
 
       // Initial render + live market + cloud D1 sync
       populateSelects();
-      setView('dashboard');
+      setView(location.hash === '#importacao' ? 'imports' : 'dashboard');
+      window.addEventListener('hashchange', () => {
+        if (location.hash === '#importacao') setView('imports');
+      });
       fetchMarketData();
 
       if (window.FinancasCloud) {
@@ -2257,7 +2374,7 @@
               renderAll();
             }
           },
-          onRender: () => { populateSelects(); renderAll(); },
+          onRender: () => { populateSelects(); renderAll(); loadPluggy().catch(()=>{}); },
           showToast,
         });
       }

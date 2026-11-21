@@ -16,6 +16,11 @@ async function sha256Hex(input: string): Promise<string> {
   return toHex(digest);
 }
 
+// Previous optional-login sessions must not authorize the personal banking integration.
+function sessionHash(env: Env, token: string): Promise<string> {
+  return sha256Hex(JSON.stringify(['authenticated-session', env.APP_PASSWORD, token]));
+}
+
 function timingSafeEqual(a: string, b: string): boolean {
   const enc = new TextEncoder();
   const ab = enc.encode(a);
@@ -43,7 +48,7 @@ export async function createSession(env: Env, deviceName: string): Promise<{ tok
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
   const token = toHex(bytes.buffer);
-  const tokenHash = await sha256Hex(token);
+  const tokenHash = await sessionHash(env, token);
   const expiresAt = new Date(Date.now() + SESSION_TTL_SECONDS * 1000).toISOString();
 
   if (env.DB) {
@@ -62,7 +67,7 @@ export async function revokeSession(env: Env, request: Request): Promise<string>
   const cookies = parseCookies(request.headers.get('cookie'));
   const token = cookies[SESSION_COOKIE];
   if (token && env.DB) {
-    const tokenHash = await sha256Hex(token);
+    const tokenHash = await sessionHash(env, token);
     await env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(tokenHash).run();
   }
   return `${SESSION_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
@@ -75,10 +80,10 @@ export async function isAuthenticated(env: Env, request: Request): Promise<boole
   if (!token) return false;
 
   if (!env.DB) {
-    return token.length === 64;
+    return false;
   }
 
-  const tokenHash = await sha256Hex(token);
+  const tokenHash = await sessionHash(env, token);
   const row = await env.DB.prepare(
     'SELECT expires_at FROM sessions WHERE token_hash = ?'
   )

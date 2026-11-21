@@ -65,7 +65,7 @@
       const res = await fetch('/api/state', {
         method: 'PUT',
         credentials: 'same-origin',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', 'X-Workspace-Version': 'fresh-20261121' },
         body: JSON.stringify({ state: stateObj }),
       });
       if (res.status === 401) {

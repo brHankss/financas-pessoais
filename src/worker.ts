@@ -6,7 +6,12 @@ import { handleHealthRoute } from './routes/health';
 import { handleMarketRoute } from './routes/market';
 import { handleStateRoutes } from './routes/state';
 
+import { pluggyRoute, syncPluggy } from './routes/pluggy';
+
 export default {
+  async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(syncPluggy(env, true));
+  },
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const { pathname } = url;
@@ -26,6 +31,9 @@ export default {
 
         const marketRes = await handleMarketRoute(request, pathname);
         if (marketRes) return marketRes;
+
+        const integration = await pluggyRoute(request, env, pathname);
+        if (integration) return integration;
 
         const stateRes = await handleStateRoutes(request, env, pathname);
         if (stateRes) return stateRes;

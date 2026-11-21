@@ -56,3 +56,11 @@ html.dark { --accent: #a7c6ff; --selected: #233451; }
   .desktop-navigation.drawer-open #desktop-sidebar { visibility:visible; opacity:1; transform:none; pointer-events:auto; }
 }
 @media(prefers-reduced-motion:reduce) { #desktop-sidebar { transition:none; } }
+.pg-option { display:flex; align-items:center; flex-wrap:wrap; gap:9px; min-height:44px; font-size:14px; }
+.pg-option small { font-size:12px; color:var(--text-secondary); }
+.pg-option input[type=checkbox] { width:18px; height:18px; accent-color:var(--accent); }
+.pg-invest { padding:9px 0; border-bottom:1px solid var(--border-hairline); }
+.pg-invest small { display:block; }
+.pg-invest b { margin-left:auto; }
+#manual-add label { display:inline-flex; align-items:center; gap:5px; flex-wrap:wrap; font-size:14px; margin:4px; }
+#manual-add [hidden] { display:none; }

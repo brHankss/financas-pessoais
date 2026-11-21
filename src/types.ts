@@ -2,6 +2,8 @@ export interface Env {
   ASSETS: Fetcher;
   DB?: D1Database;
   APP_PASSWORD?: string;
+  PLUGGY_CLIENT_ID?: string;
+  PLUGGY_CLIENT_SECRET?: string;
 }
 
 export interface MarketRates {
@@ -104,3 +106,5 @@ export interface FinancialState {
   bankTransactions: BankTransaction[];
   investments: Investment[];
 }
+
+export type ImportGroup = 'accounts' | 'cards' | 'investments';

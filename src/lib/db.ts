@@ -16,55 +16,10 @@ let schemaInitialized = false;
 export function getDefaultState(): FinancialState {
   return {
     theme: 'dark',
-    monthlyBudgetCap: 12000,
+    monthlyBudgetCap: 0,
     marketRates: { cdi: 13.65, ipca: 4.5, irRate: 0.175 },
-    accounts: [
-      { id: 'acc_itau', name: 'Itaú Personnalité', balance: 22350.0, color: '#3B82F6' },
-      { id: 'acc_nu', name: 'Conta Nubank', balance: 14820.5, color: '#8B5CF6' },
-      { id: 'acc_cash', name: 'Espécie', balance: 1850.0, color: '#10B981' },
-    ],
-    cards: [
-      { id: 'card_nu', name: 'Nubank Ultravioleta', institution: 'Nubank', last4: '8412', limit: 28000, closeDay: 4, dueDay: 11 },
-      { id: 'card_itau', name: 'Itaú Black', institution: 'Itaú', last4: '3390', limit: 35000, closeDay: 15, dueDay: 22 },
-      { id: 'card_res', name: 'Cartão Reserva', institution: 'Manual', last4: '1044', limit: 8000, closeDay: 10, dueDay: 18 },
-    ],
-    people: [
-      { id: 'p_italo', name: 'Ítalo', role: 'Titular', isOwner: true },
-      { id: 'p_marcelly', name: 'Marcelly', role: 'Dependente', isOwner: false },
-      { id: 'p_palace', name: 'Açougue', role: 'Negócio', isOwner: false },
-      { id: 'p_sogra', name: 'Sogra', role: 'Família', isOwner: false },
-    ],
-    cardPurchases: [
-      { id: 'cp_01', cardId: 'card_nu', date: '2026-11-08', startMonth: '2026-11', description: 'Supermercado Zona Sul', category: 'Alimentação', totalCents: 120000, installments: 1, splits: [{ personId: 'p_italo', cents: 80000 }, { personId: 'p_sogra', cents: 40000 }] },
-      { id: 'cp_02', cardId: 'card_nu', date: '2026-11-10', startMonth: '2026-11', description: 'Shopping Barra — Roupas', category: 'Compras', totalCents: 90000, installments: 3, splits: [{ personId: 'p_marcelly', cents: 90000 }] },
-      { id: 'cp_03', cardId: 'card_itau', date: '2026-11-12', startMonth: '2026-11', description: 'Embalagens Açougue', category: 'Compras', totalCents: 240000, installments: 4, splits: [{ personId: 'p_palace', cents: 240000 }] },
-      { id: 'cp_04', cardId: 'card_nu', date: '2026-11-14', startMonth: '2026-11', description: 'Drogaria Venancio', category: 'Saúde', totalCents: 46000, installments: 2, splits: [{ personId: 'p_sogra', cents: 46000 }] },
-      { id: 'cp_05', cardId: 'card_itau', date: '2026-11-16', startMonth: '2026-11', description: 'Jantar em Família', category: 'Lazer', totalCents: 60000, installments: 1, splits: [{ personId: 'p_italo', cents: 30000 }, { personId: 'p_marcelly', cents: 30000 }] },
-      { id: 'cp_06', cardId: 'card_res', date: '2026-11-17', startMonth: '2026-11', description: 'Posto Ipiranga', category: 'Transporte', totalCents: 35000, installments: 1, splits: [{ personId: 'p_italo', cents: 35000 }] },
-    ],
-    personEvents: [
-      { id: 'ev_01', personId: 'p_sogra', month: '2026-11', type: 'repayment', cents: 30000, date: '2026-11-15', accountId: 'acc_nu', note: 'Pix parcial do mercado' },
-      { id: 'ev_02', personId: 'p_palace', month: '2026-11', type: 'advance', cents: 40000, date: '2026-11-14', accountId: 'acc_itau', note: 'Adiantamento caixa loja' },
-      { id: 'ev_03', personId: 'p_marcelly', month: '2026-11', type: 'refund', cents: 8500, date: '2026-11-18', accountId: null, note: 'Estorno peça devolvida' },
-    ],
-    fixedIncomes: [
-      { id: 'fi_01', title: 'Pró-labore Palace Carnes', amount: 15000, payDay: 5, accountId: 'acc_itau', receivedMonths: { '2026-11': true } },
-      { id: 'fi_02', title: 'Retirada Multi Frutti', amount: 3500, payDay: 10, accountId: 'acc_itau', receivedMonths: { '2026-11': true } },
-    ],
-    bankTransactions: [
-      { id: 'bt_01', date: '2026-11-05', description: 'Pró-labore Palace Carnes', type: 'income', category: 'Salário', accountId: 'acc_itau', amount: 15000 },
-      { id: 'bt_02', date: '2026-11-10', description: 'Retirada Multi Frutti', type: 'income', category: 'Salário', accountId: 'acc_itau', amount: 3500 },
-      { id: 'bt_03', date: '2026-11-12', description: 'Honorários Advocatícios', type: 'income', category: 'Extra', accountId: 'acc_nu', amount: 6400 },
-      { id: 'bt_04', date: '2026-11-06', description: 'Condomínio e IPTU', type: 'expense', category: 'Moradia', accountId: 'acc_itau', amount: 1980 },
-      { id: 'bt_05', date: '2026-11-10', description: 'Plano de Saúde Familiar', type: 'expense', category: 'Saúde', accountId: 'acc_itau', amount: 2390 },
-      { id: 'bt_06', date: '2026-11-14', description: 'Escola Infantil', type: 'expense', category: 'Educação', accountId: 'acc_itau', amount: 1850 },
-    ],
-    investments: [
-      { id: 'inv_01', name: 'Caixinha Reserva (CDB)', rateType: 'CDI', rateVal: 100, taxFree: false, gross: 49860.4 },
-      { id: 'inv_02', name: 'CDB Itaú 2028', rateType: 'CDI', rateVal: 108, taxFree: false, gross: 67420.0 },
-      { id: 'inv_03', name: 'LCI Liquidez 90d', rateType: 'CDI', rateVal: 93, taxFree: true, gross: 26900.0 },
-      { id: 'inv_04', name: 'Tesouro IPCA+ 2035', rateType: 'IPCA', rateVal: 6.45, taxFree: false, gross: 39180.5 },
-    ],
+    accounts: [], cards: [], people: [], cardPurchases: [], personEvents: [],
+    fixedIncomes: [], bankTransactions: [], investments: [],
   };
 }
 
@@ -88,10 +43,15 @@ export async function ensureSchema(db: D1Database): Promise<void> {
 
   await db.batch(ddl.map((sql) => db.prepare(sql)));
 
-  const existing = await db.prepare('SELECT COUNT(*) as total FROM accounts').first<{ total: number }>();
-  if (!existing || existing.total === 0) {
-    await saveFullState(db, getDefaultState());
-  }
+  // A single D1 transaction clears the old dataset once, including during concurrent cold starts.
+  const tables = ['card_purchase_splits', 'card_statement_amounts', 'card_purchases', 'person_events',
+    'bank_transactions', 'fixed_incomes', 'investments', 'cards', 'accounts', 'people', 'app_settings'];
+  const guard = "NOT EXISTS (SELECT 1 FROM workspace_migrations WHERE id = 'fresh-start-20261121')";
+  await db.batch([
+    db.prepare('CREATE TABLE IF NOT EXISTS workspace_migrations (id TEXT PRIMARY KEY)'),
+    ...tables.map(table => db.prepare(`DELETE FROM ${table} WHERE ${guard}`)),
+    db.prepare("INSERT OR IGNORE INTO workspace_migrations(id) VALUES ('fresh-start-20261121')"),
+  ]);
 
   schemaInitialized = true;
 }
@@ -238,7 +198,7 @@ export async function loadFullState(db: D1Database): Promise<FinancialState> {
 
   return {
     theme: settingsMap.get('theme') === 'light' ? 'light' : 'dark',
-    monthlyBudgetCap: Number(settingsMap.get('monthlyBudgetCap')) || 12000,
+    monthlyBudgetCap: Number(settingsMap.get('monthlyBudgetCap')) || 0,
     marketRates,
     accounts,
     cards,
@@ -267,7 +227,7 @@ export async function saveFullState(db: D1Database, state: FinancialState): Prom
     ).bind(state.theme === 'light' ? 'light' : 'dark'),
     db.prepare(
       "INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES ('monthlyBudgetCap', ?, datetime('now'))"
-    ).bind(String(Number(state.monthlyBudgetCap) || 12000)),
+    ).bind(String(Number(state.monthlyBudgetCap) || 0)),
     db.prepare(
       "INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES ('marketRates', ?, datetime('now'))"
     ).bind(JSON.stringify(state.marketRates || { cdi: 13.65, ipca: 4.5, irRate: 0.175 })),
