@@ -3,6 +3,7 @@ import { isAuthenticated } from './lib/auth';
 import { errorJson } from './lib/http';
 import { handleAuthRoutes } from './routes/auth';
 import { handleHealthRoute } from './routes/health';
+import { handleMarketRoute } from './routes/market';
 import { handleStateRoutes } from './routes/state';
 
 export default {
@@ -22,6 +23,9 @@ export default {
         if (!authed) {
           return errorJson('Sessão expirada ou não autenticada.', 401);
         }
+
+        const marketRes = await handleMarketRoute(request, pathname);
+        if (marketRes) return marketRes;
 
         const stateRes = await handleStateRoutes(request, env, pathname);
         if (stateRes) return stateRes;

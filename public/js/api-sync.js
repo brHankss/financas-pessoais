@@ -5,12 +5,11 @@
   let callbacks = null;
 
   function setStatus(label, tone) {
-    const pill = document.getElementById('cloud-sync-pill');
-    const dot = document.getElementById('cloud-sync-dot');
-    const text = document.getElementById('cloud-sync-text');
-    if (!pill || !dot || !text) return;
+    const dot = document.getElementById('sidebar-cloud-dot');
+    const text = document.getElementById('sidebar-cloud-text');
+    if (!dot || !text) return;
     text.textContent = label;
-    dot.className = 'w-1.5 h-1.5 rounded-full ' + (
+    dot.className = 'w-2 h-2 rounded-full shrink-0 ' + (
       tone === 'ok'
         ? 'bg-emerald-500'
         : tone === 'saving'
@@ -44,24 +43,24 @@
         setStatus('Login necessário', 'warn');
         return;
       }
-      if (!res.ok) throw new Error('Falha ao ler API');
+      if (!res.ok) throw new Error('API offline');
       const data = await res.json();
       d1Enabled = Boolean(data.d1Connected);
       if (d1Enabled && data.state && callbacks) {
         callbacks.setState(data.state);
         callbacks.onRender();
-        setStatus('Nuvem D1', 'ok');
+        setStatus('Cloudflare D1 ativo', 'ok');
       } else {
-        setStatus('Local (sem D1)', 'warn');
+        setStatus('Armazenamento local', 'warn');
       }
-    } catch (err) {
-      setStatus('Offline (local)', 'warn');
+    } catch {
+      setStatus('Armazenamento local', 'warn');
     }
   }
 
   async function pushToCloud(stateObj) {
     if (!d1Enabled) return;
-    setStatus('Salvando D1...', 'saving');
+    setStatus('Salvando na nuvem...', 'saving');
     try {
       const res = await fetch('/api/state', {
         method: 'PUT',
@@ -74,13 +73,10 @@
         setStatus('Sessão expirada', 'error');
         return;
       }
-      if (!res.ok) throw new Error('Falha ao gravar no D1');
-      setStatus('Nuvem D1', 'ok');
-    } catch (err) {
-      setStatus('Erro ao sincronizar', 'error');
-      if (callbacks && callbacks.showToast) {
-        callbacks.showToast('Sem conexão com o D1 — salvo localmente.');
-      }
+      if (!res.ok) throw new Error('Erro ao gravar');
+      setStatus('Cloudflare D1 ativo', 'ok');
+    } catch {
+      setStatus('Salvo localmente', 'warn');
     }
   }
 
@@ -141,12 +137,11 @@
       setStatus('Conectando...', 'saving');
       try {
         const meRes = await fetch('/api/auth/me', { credentials: 'same-origin' });
-        if (!meRes.ok) throw new Error('API indisponível');
+        if (!meRes.ok) throw new Error('Sem backend');
         const me = await meRes.json();
         authRequired = Boolean(me.authRequired);
         d1Enabled = Boolean(me.d1Connected);
         showLogoutButton(authRequired && Boolean(me.authenticated));
-
         if (authRequired && !me.authenticated) {
           toggleAuthGate(true);
           setStatus('Bloqueado', 'warn');
@@ -154,7 +149,7 @@
         }
         await pullFromCloud();
       } catch {
-        setStatus('Modo local', 'warn');
+        setStatus('Modo preview local', 'warn');
       }
     },
 
