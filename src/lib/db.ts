@@ -77,6 +77,7 @@ export async function ensureSchema(db: D1Database): Promise<void> {
     `CREATE TABLE IF NOT EXISTS cards (id TEXT PRIMARY KEY, name TEXT NOT NULL, institution TEXT NOT NULL DEFAULT 'Manual', last4 TEXT NOT NULL DEFAULT '0000', credit_limit REAL NOT NULL DEFAULT 0, close_day INTEGER NOT NULL DEFAULT 1, due_day INTEGER NOT NULL DEFAULT 10, sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')))`,
     `CREATE TABLE IF NOT EXISTS people (id TEXT PRIMARY KEY, name TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'Família', is_owner INTEGER NOT NULL DEFAULT 0, sort_order INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now')))`,
     `CREATE TABLE IF NOT EXISTS card_purchases (id TEXT PRIMARY KEY, card_id TEXT NOT NULL, purchase_date TEXT NOT NULL, start_month TEXT NOT NULL, description TEXT NOT NULL, category TEXT NOT NULL DEFAULT 'Outros', total_cents INTEGER NOT NULL DEFAULT 0, installments INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT (datetime('now')))`,
+    `CREATE TABLE IF NOT EXISTS card_statement_amounts (purchase_id TEXT NOT NULL, month_key TEXT NOT NULL, cents INTEGER NOT NULL, PRIMARY KEY (purchase_id, month_key))`,
     `CREATE TABLE IF NOT EXISTS card_purchase_splits (id INTEGER PRIMARY KEY AUTOINCREMENT, purchase_id TEXT NOT NULL, person_id TEXT NOT NULL, cents INTEGER NOT NULL DEFAULT 0)`,
     `CREATE TABLE IF NOT EXISTS person_events (id TEXT PRIMARY KEY, person_id TEXT NOT NULL, month_key TEXT NOT NULL, event_type TEXT NOT NULL, cents INTEGER NOT NULL DEFAULT 0, event_date TEXT NOT NULL, account_id TEXT, note TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT (datetime('now')))`,
     `CREATE TABLE IF NOT EXISTS fixed_incomes (id TEXT PRIMARY KEY, title TEXT NOT NULL, amount REAL NOT NULL DEFAULT 0, pay_day INTEGER NOT NULL DEFAULT 5, account_id TEXT NOT NULL, received_months_json TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL DEFAULT (datetime('now')))`,
@@ -109,6 +110,7 @@ export async function loadFullState(db: D1Database): Promise<FinancialState> {
     fixedRes,
     bankRes,
     invRes,
+    statementRes,
   ] = await db.batch([
     db.prepare('SELECT key, value FROM app_settings'),
     db.prepare('SELECT id, name, balance, color FROM accounts ORDER BY sort_order ASC, created_at ASC'),
@@ -120,6 +122,7 @@ export async function loadFullState(db: D1Database): Promise<FinancialState> {
     db.prepare('SELECT id, title, amount, pay_day, account_id, received_months_json FROM fixed_incomes ORDER BY pay_day ASC'),
     db.prepare('SELECT id, tx_date, description, tx_type, category, account_id, amount FROM bank_transactions ORDER BY tx_date DESC'),
     db.prepare('SELECT id, name, rate_type, rate_val, tax_free, gross FROM investments ORDER BY gross DESC'),
+    db.prepare('SELECT purchase_id, month_key, cents FROM card_statement_amounts'),
   ]);
 
   const settingsMap = new Map<string, string>();
@@ -166,6 +169,13 @@ export async function loadFullState(db: D1Database): Promise<FinancialState> {
     isOwner: Boolean(r.is_owner),
   }));
 
+  const statements = new Map<string, Record<string, number>>();
+  for (const row of statementRes.results as Array<{ purchase_id: string; month_key: string; cents: number }>) {
+    const months = statements.get(row.purchase_id) || {};
+    months[row.month_key] = row.cents;
+    statements.set(row.purchase_id, months);
+  }
+
   const cardPurchases: CardPurchase[] = ((purchasesRes.results as Array<Record<string, unknown>>) || []).map((r) => ({
     id: String(r.id),
     cardId: String(r.card_id),
@@ -175,6 +185,7 @@ export async function loadFullState(db: D1Database): Promise<FinancialState> {
     category: String(r.category || 'Outros'),
     totalCents: Number(r.total_cents) || 0,
     installments: Number(r.installments) || 1,
+    statementAmounts: statements.get(String(r.id)),
     splits: splitsByPurchase.get(String(r.id)) || [],
   }));
 
@@ -292,6 +303,11 @@ export async function saveFullState(db: D1Database, state: FinancialState): Prom
         'INSERT INTO card_purchases (id, card_id, purchase_date, start_month, description, category, total_cents, installments) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
       ).bind(cp.id, cp.cardId, cp.date, cp.startMonth, cp.description, cp.category || 'Outros', Math.round(Number(cp.totalCents) || 0), Math.max(1, Number(cp.installments) || 1))
     );
+    for (const [month, cents] of Object.entries(cp.statementAmounts || {})) {
+      if (/^\d{4}-(0[1-9]|1[0-2])$/.test(month) && Number.isSafeInteger(cents) && cents > 0) {
+        stmts.push(db.prepare('INSERT OR REPLACE INTO card_statement_amounts (purchase_id, month_key, cents) VALUES (?, ?, ?)').bind(cp.id, month, cents));
+      }
+    }
     (cp.splits || []).forEach((sp) => {
       stmts.push(
         db.prepare(
@@ -333,6 +349,7 @@ export async function saveFullState(db: D1Database, state: FinancialState): Prom
     );
   });
 
+  stmts.push(db.prepare('DELETE FROM card_statement_amounts WHERE purchase_id NOT IN (SELECT id FROM card_purchases)'));
   await db.batch(stmts);
 }
 

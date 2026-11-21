@@ -49,6 +49,7 @@ export interface CardPurchase {
   totalCents: number;
   installments: number;
   splits: PurchaseSplit[];
+  statementAmounts?: Record<string, number>;
 }
 
 export interface PersonEvent {

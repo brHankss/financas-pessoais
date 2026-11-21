@@ -113,13 +113,15 @@
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.35); border-radius: 9999px; }
   </style>
+  <link rel="stylesheet" href="/finance.css" />
+  <script src="/js/statement-reader.js"></script>
   <link rel="manifest" href="/manifest.json" />
   <script src="/js/api-sync.js"></script>
 </head>
 <body class="min-h-screen overflow-x-hidden">
   <div class="flex min-h-screen">
-    <!-- Far-left slim icon rail (Tessera style, desktop) -->
-    <aside class="hidden lg:flex w-14 flex-col items-center py-4 border-r hairline bg-white dark:bg-[#111319] shrink-0 justify-between">
+    <div class="desktop-navigation">
+    <aside id="icon-rail" aria-label="Atalhos de navegação" class="hidden md:flex w-14 flex-col items-center py-4 border-r hairline bg-white dark:bg-[#111319] shrink-0 justify-between">
       <div class="flex flex-col items-center gap-3">
         <button type="button" data-view="dashboard" title="Resumo geral" class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">FP</button>
         <div class="w-6 h-px bg-zinc-200 dark:bg-zinc-800 my-1"></div>
@@ -197,6 +199,7 @@
       </div>
     </aside>
 
+    </div>
     <!-- Main content area -->
     <div class="flex-1 flex flex-col min-w-0">
       <!-- Top Header Bar -->
@@ -246,53 +249,16 @@
         <main class="flex-1 min-w-0 p-4 lg:p-6 pb-24 md:pb-8 space-y-5 overflow-y-auto">
           <!-- VIEW: DASHBOARD -->
           <section id="view-dashboard" class="space-y-5">
-            <!-- Sub-tabs strip like Tessera -->
-            <div class="flex items-center justify-between border-b hairline pb-2">
-              <div class="flex items-center gap-5 text-xs">
-                <button type="button" data-view="dashboard" class="tab-btn active pb-2 -mb-2.5 flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i>Visão geral</button>
-                <button type="button" data-view="cards" class="tab-btn pb-2 -mb-2.5 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 flex items-center gap-1.5"><i data-lucide="credit-card" class="w-3.5 h-3.5"></i>Cartões</button>
-                <button type="button" data-view="investments" class="tab-btn pb-2 -mb-2.5 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 flex items-center gap-1.5"><i data-lucide="trending-up" class="w-3.5 h-3.5"></i>Investimentos</button>
-                <button type="button" data-view="market" class="tab-btn pb-2 -mb-2.5 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 flex items-center gap-1.5"><i data-lucide="globe" class="w-3.5 h-3.5"></i>Mercado</button>
-              </div>
-              <span class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Live
-              </span>
-            </div>
-
-            <!-- 3 Tessera Overview KPI Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div class="card dot-bg rounded-2xl p-4 relative overflow-hidden">
-                <div class="flex items-center justify-between">
-                  <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Dinheiro disponível</span>
-                  <span class="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center"><i data-lucide="wallet" class="w-3.5 h-3.5"></i></span>
-                </div>
-                <p id="kpi-cash" class="text-2xl font-extrabold tracking-tight mt-2 tabular-nums">R$ 0,00</p>
-                <p id="kpi-cash-sub" class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1">Contas + espécie</p>
-              </div>
-
-              <div class="card dot-bg rounded-2xl p-4 relative overflow-hidden">
-                <div class="flex items-center justify-between">
-                  <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Fatura integral (banco)</span>
-                  <span class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center"><i data-lucide="credit-card" class="w-3.5 h-3.5"></i></span>
-                </div>
-                <p id="kpi-bill" class="text-2xl font-extrabold tracking-tight mt-2 tabular-nums">R$ 0,00</p>
-                <p id="kpi-bill-sub" class="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium mt-1">Seu + terceiros</p>
-              </div>
-
-              <div class="card dot-bg rounded-2xl p-4 relative overflow-hidden">
-                <div class="flex items-center justify-between">
-                  <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">A receber (terceiros)</span>
-                  <span class="w-7 h-7 rounded-lg bg-violet-50 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400 flex items-center justify-center"><i data-lucide="users" class="w-3.5 h-3.5"></i></span>
-                </div>
-                <p id="kpi-recv" class="text-2xl font-extrabold tracking-tight mt-2 tabular-nums">R$ 0,00</p>
-                <p id="kpi-recv-sub" class="text-[11px] text-violet-600 dark:text-violet-400 font-medium mt-1">Isolado do caixa próprio</p>
-              </div>
+            <div class="overview-grid">
+              <article class="metric balance"><h2>Dinheiro disponível</h2><strong id="kpi-cash"></strong><p id="kpi-cash-sub"></p></article>
+              <article class="metric"><h2>Faturas do mês</h2><strong id="kpi-bill"></strong><p id="kpi-bill-sub"></p></article>
+              <article class="metric"><h2>A receber de terceiros</h2><strong id="kpi-recv"></strong><p id="kpi-recv-sub"></p></article>
             </div>
 
             <!-- Tessera Workload-style horizontal 4-item status strip -->
             <div class="card rounded-2xl p-4">
               <div class="flex items-center justify-between mb-3">
-                <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Pulso financeiro do mês</h2>
+                <h2 class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Movimento do mês</h2>
                 <span id="dash-open-items" class="text-[11px] text-zinc-400">0 lançamentos</span>
               </div>
               <div class="grid grid-cols-2 lg:grid-cols-4 gap-3" id="dash-pulse-strip"></div>
@@ -395,7 +361,14 @@
                   <h3 id="card-detail-title" class="text-sm font-bold">Fatura do cartão</h3>
                   <span id="card-detail-total" class="text-sm font-extrabold tabular-nums">R$ 0,00</span>
                 </div>
+                <div class="bill-toolbar">
+                  <button type="button" class="bill-btn bill-primary" id="read-statement">Importar fatura PDF</button>
+                  <button type="button" class="bill-btn" id="bill-new-person">Cadastrar pessoa</button>
+                  <input hidden type="file" accept=".pdf,application/pdf" id="statement-file">
+                </div>
+                <p id="pdf-status" role="status" class="text-sm mb-2"></p>
                 <div id="card-items-list" class="divide-y hairline"></div>
+                <details class="forecast" id="card-forecast"><summary>Previsão das próximas faturas</summary><ul></ul></details>
               </div>
 
               <div class="card rounded-2xl p-5 space-y-4">
@@ -748,14 +721,23 @@
   </div>
 
   <!-- Mobile Bottom Navigation -->
-  <nav class="md:hidden fixed bottom-0 inset-x-0 z-30 h-14 border-t hairline bg-white/95 dark:bg-[#12141B]/95 backdrop-blur grid grid-cols-5 text-[10px] font-medium">
-    <button type="button" data-view="dashboard" class="flex flex-col items-center justify-center gap-0.5 text-blue-600"><i data-lucide="layout-dashboard" class="w-4 h-4"></i>Resumo</button>
+  <nav id="mobile-nav" aria-label="Navegação principal" class="md:hidden fixed bottom-0 inset-x-0 z-30 h-14 border-t hairline bg-white/95 dark:bg-[#12141B]/95 backdrop-blur grid grid-cols-5 text-[10px] font-medium">
+    <button type="button" data-view="dashboard" class="flex flex-col items-center justify-center gap-0.5"><i data-lucide="layout-dashboard" class="w-4 h-4"></i>Resumo</button>
     <button type="button" data-view="cards" class="flex flex-col items-center justify-center gap-0.5 text-zinc-500"><i data-lucide="credit-card" class="w-4 h-4"></i>Cartões</button>
     <button type="button" data-view="investments" class="flex flex-col items-center justify-center gap-0.5 text-zinc-500"><i data-lucide="trending-up" class="w-4 h-4"></i>Invest.</button>
     <button type="button" data-view="market" class="flex flex-col items-center justify-center gap-0.5 text-zinc-500"><i data-lucide="newspaper" class="w-4 h-4"></i>Mercado</button>
     <button type="button" data-view="transactions" class="flex flex-col items-center justify-center gap-0.5 text-zinc-500"><i data-lucide="arrow-left-right" class="w-4 h-4"></i>Extrato</button>
   </nav>
 
+  <dialog id="statement-dialog" aria-labelledby="review-title">
+    <h2 id="review-title">Revisar fatura</h2><p id="review-context"></p>
+    <p id="review-summary"></p><div id="review-rows"></div>
+    <p role="alert" id="review-error"></p>
+    <div class="review-actions">
+      <button type="button" class="bill-btn bill-primary" id="review-save">Confirmar importação</button>
+      <button type="button" class="bill-btn" id="review-cancel">Cancelar</button>
+    </div>
+  </dialog>
   <!-- MODALS -->
   <div id="modal-purchase" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
     <div class="absolute inset-0 modal-backdrop" data-close-modal="modal-purchase"></div>
@@ -930,7 +912,7 @@
   <script>
     (function () {
       const STORAGE_KEY = 'financas_pessoais_v3_state';
-      const MONTHS = ['2026-10', '2026-11', '2026-12', '2027-01', '2027-02'];
+      const monthLabel = key => new Intl.DateTimeFormat('pt-BR', { month: 'short', year: 'numeric' }).format(new Date(key + '-15T12:00:00'));
       const CATEGORIES = ['Alimentação', 'Moradia', 'Saúde', 'Educação', 'Transporte', 'Lazer', 'Compras', 'Assinaturas', 'Salário', 'Extra', 'Outros'];
 
       function addMonths(ym, off) {
@@ -1072,14 +1054,17 @@
         if (lbl) lbl.textContent = isDark ? 'Escuro' : 'Claro';
       }
 
-      function getMonthInstallments(monthKey) {
+      function getMonthInstallments(monthKey, includeEarlier = false) {
         const rows = [];
         state.cardPurchases.forEach((cp) => {
           const n = Math.max(1, Number(cp.installments) || 1);
+          const confirmed = cp.statementAmounts || {};
+          const firstKnown = cp.id.startsWith('pdf_') ? Object.keys(confirmed).sort()[0] : null;
+          if (!includeEarlier && firstKnown && monthKey < firstKnown) return;
           const parts = splitCents(cp.totalCents, n);
           for (let i = 0; i < n; i++) {
             if (addMonths(cp.startMonth, i) !== monthKey) continue;
-            const instCents = parts[i];
+            const instCents = confirmed[monthKey] ?? parts[i];
             const splits = [];
             let alloc = 0;
             cp.splits.forEach((sp, idx) => {
@@ -1093,6 +1078,8 @@
               date: cp.date,
               description: cp.description,
               category: cp.category,
+              confirmed: Object.hasOwn(confirmed, monthKey),
+              forecast: !Object.hasOwn(confirmed, monthKey) && i > 0,
               installmentNumber: i + 1,
               installmentsTotal: n,
               fullCents: instCents,
@@ -1145,7 +1132,12 @@
           const el = document.getElementById(`view-${id}`);
           if (el) el.classList.toggle('hidden', id !== v);
         });
-        document.querySelectorAll('.nav-btn').forEach((b) => b.classList.toggle('active', b.dataset.view === v));
+        document.querySelectorAll('.nav-btn, .rail-btn, #mobile-nav button').forEach(button => {
+          const active = button.dataset.view === v;
+          button.classList.toggle('active', active);
+          if (active) button.setAttribute('aria-current', 'page');
+          else button.removeAttribute('aria-current');
+        });
         const titles = {
           dashboard: 'Resumo geral',
           cards: 'Cartões e rateio',
@@ -1259,13 +1251,7 @@
           { label: 'Investido', val: fmtBRL(totalInv), ring: '#8B5CF6', num: '4' },
         ];
         document.getElementById('dash-pulse-strip').innerHTML = pulse.map((p) => `
-          <div class="p-3 rounded-xl border hairline bg-zinc-50/60 dark:bg-[#191C26] flex items-center gap-3">
-            <span class="w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-extrabold shrink-0" style="border-color:${p.ring};color:${p.ring}">${p.num}</span>
-            <div class="min-w-0">
-              <p class="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">${p.label}</p>
-              <p class="text-xs font-bold tabular-nums truncate">${p.val}</p>
-            </div>
-          </div>
+          <div class="pulse-item" style="border-color:${p.ring}"><span>${p.label}</span><b>${p.val}</b></div>
         `).join('');
 
         // Capacity bar
@@ -1376,18 +1362,22 @@
         document.getElementById('card-detail-total').textContent = fmtCents(cardTotal);
         document.getElementById('card-items-list').innerHTML = cardItems.length
           ? cardItems.map((r) => `
-              <div class="py-3 flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                  <p class="text-xs font-semibold truncate">${esc(r.description)} ${r.installmentsTotal > 1 ? `<span class="text-[10px] text-blue-600 font-bold">(${r.installmentNumber}/${r.installmentsTotal})</span>` : ''}</p>
-                  <p class="text-[11px] text-zinc-400">${fmtDate(r.date)} · ${r.splits.map((s) => `${getPerson(s.personId).name}: ${fmtCents(s.cents)}`).join(' | ')}</p>
-                </div>
-                <div class="flex items-center gap-2 shrink-0">
-                  <span class="text-xs font-bold tabular-nums">${fmtCents(r.fullCents)}</span>
-                  <button type="button" data-del-purchase="${esc(r.purchaseId)}" class="p-1 text-zinc-400 hover:text-rose-500" title="Excluir"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-                </div>
+              <div class="bill-row">
+                <div><strong>${esc(r.description)}</strong><small>${fmtDate(r.date)} · ${r.installmentsTotal > 1 ? 'Parcela ' + r.installmentNumber + '/' + r.installmentsTotal : 'À vista'}${r.confirmed ? ' · Conferida no PDF' : r.forecast ? ' · Prevista' : ''}</small></div>
+                <div class="text-right"><strong>${fmtCents(r.fullCents)}</strong>
+                  <button type="button" data-del-purchase="${esc(r.purchaseId)}" class="p-1 text-zinc-500" aria-label="Excluir compra"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
+                <label class="bill-owner">Responsável
+                  <select class="bill-field" data-bill-owner="${esc(r.purchaseId)}">
+                    ${r.splits.length !== 1 ? '<option value="">Rateio atual</option>' : ''}
+                    ${personOptions(r.splits.length === 1 ? r.splits[0].personId : '')}
+                  </select>
+                  ${r.splits.length > 1 ? '<small>' + r.splits.map(sp => esc(getPerson(sp.personId).name) + ' ' + fmtCents(sp.cents)).join(' · ') + '</small>' : ''}
+                </label>
               </div>
             `).join('')
           : '<p class="py-6 text-xs text-zinc-400 text-center">Nenhuma compra neste cartão neste mês.</p>';
+
+        renderForecast(selectedCardId, mKey);
 
         // Person Ledger
         const pSel = document.getElementById('person-ledger-select');
@@ -1766,6 +1756,7 @@
       function openPurchaseModal() {
         populateSelects();
         document.getElementById('form-purchase').reset();
+        if (currentView === 'cards') document.getElementById('cp-card').value = selectedCardId;
         document.getElementById('cp-date').value = `${getMonth()}-21`;
         document.getElementById('cp-splits-box').innerHTML = '';
         addSplitRow('p_italo', '');
@@ -1783,6 +1774,172 @@
         if (currentView === 'settings') renderSettingsView();
         if (window.lucide) lucide.createIcons();
       }
+
+      function personOptions(selected) {
+        return state.people.map(person => `<option value="${esc(person.id)}" ${person.id === selected ? 'selected' : ''}>${esc(person.name)}</option>`).join('');
+      }
+
+      document.getElementById('card-items-list').onchange = event => {
+        const select = event.target.closest('[data-bill-owner]');
+        if (!select || !select.value) return;
+        const purchase = state.cardPurchases.find(p => p.id === select.dataset.billOwner);
+        if (!purchase) return;
+        purchase.splits = [{personId: select.value, cents: purchase.totalCents}];
+        saveState();
+        renderAll();
+        showToast(purchase.installments > 1 ? 'Responsável atualizado em todas as parcelas.' : 'Responsável atualizado.');
+      };
+      document.getElementById('bill-new-person').onclick = () => openModal('modal-person');
+
+      function renderForecast(cardId, currentMonth) {
+        const card = state.cardPurchases.filter(p => p.cardId === cardId && p.installments > 1);
+        const end = card.map(p => addMonths(p.startMonth, p.installments - 1)).sort().pop();
+        const list = [];
+        for (let month = addMonths(currentMonth, 1); end && month <= end; month = addMonths(month, 1)) {
+          const rows = getMonthInstallments(month).filter(r => r.cardId === cardId && r.installmentsTotal > 1);
+          if (!rows.length) continue;
+          const byPerson = new Map();
+          for (const row of rows) for (const sp of row.splits) {
+            byPerson.set(sp.personId, (byPerson.get(sp.personId) || 0) + sp.cents);
+          }
+          const detail = [...byPerson].map(([id, cents]) => esc(getPerson(id).name) + ' ' + fmtCents(cents)).join(' · ');
+          list.push(`<li><div><b>${monthLabel(month)}</b><small>${detail}</small></div><button class="bill-btn" data-bill-month="${month}" title="Abrir fatura">${fmtCents(rows.reduce((sum,r) => sum + r.fullCents, 0))}</button></li>`);
+        }
+        document.querySelector('#card-forecast ul').innerHTML = list.join('') || '<li>Nenhuma parcela futura neste cartão.</li>';
+      }
+      document.getElementById('card-forecast').onclick = event => {
+        const button = event.target.closest('[data-bill-month]');
+        if (button) goToMonth(button.dataset.billMonth);
+      };
+
+      const review = document.getElementById('statement-dialog');
+      const pdfInput = document.getElementById('statement-file');
+      const readButton = document.getElementById('read-statement');
+      const pdfStatus = document.getElementById('pdf-status');
+      let draft;
+      readButton.onclick = () => { pdfInput.value = ''; pdfInput.click(); };
+      document.getElementById('review-cancel').onclick = () => review.close();
+      pdfInput.onchange = async () => {
+        const file = pdfInput.files[0];
+        if (!file) return;
+        const cardId = selectedCardId;
+        const month = getMonth();
+        readButton.disabled = true;
+        pdfStatus.textContent = 'Lendo as páginas do PDF…';
+        try {
+          const {rows, skipped} = await StatementReader.read(file, month);
+          if (!rows.length) {
+            pdfStatus.textContent = 'Nenhuma compra reconhecida. Use um PDF com texto selecionável ou cadastre a compra manualmente.';
+            return;
+          }
+          const existing = getMonthInstallments(month, true).filter(r => r.cardId === cardId);
+          const used = new Set();
+          draft = {cardId, month, rows: rows.map(row => {
+            const name = StatementReader.normalize(row.description);
+            const candidates = existing.filter(r => r.installmentNumber === row.index && r.installmentsTotal === row.count &&
+              (StatementReader.normalize(r.description) === name || Math.abs(r.fullCents - row.cents) <= 1 || r.date === row.date));
+            const sameName = candidates.filter(r => StatementReader.normalize(r.description) === name &&
+              (row.count > 1 || r.date === row.date) && !used.has(r.purchaseId));
+            const near = sameName.filter(r => Math.abs(r.fullCents - row.cents) <= 1);
+            const exactDate = near.filter(r => r.date === row.date);
+            const matches = exactDate.length ? exactDate : near;
+            const best = matches.length === 1 ? matches[0] : null;
+            if (best) used.add(best.purchaseId);
+            return {...row, candidates, target: best?.purchaseId || (sameName.length ? '?' : 'new')};
+          })};
+          document.getElementById('review-context').textContent = getCard(cardId).name + ' · ' + monthLabel(month) + ' · ' + file.name;
+          document.getElementById('review-summary').textContent = rows.length + ' compra(s) para conferir. Compare com o PDF antes de confirmar.' + (skipped ? ' Linhas com data não importadas: ' + skipped + '.' : '');
+          document.getElementById('review-error').textContent = '';
+          const owner = state.people.find(p => p.isOwner)?.id;
+          document.getElementById('review-rows').innerHTML = draft.rows.map((r, i) => `
+            <div class="review-row" data-index="${i}">
+              <label><input type="checkbox" data-include checked> ${esc(r.description)} · ${fmtCents(r.cents)}</label>
+              <small>${fmtDate(r.date)} · ${r.count === 1 ? 'À vista' : 'Parcela ' + r.index + '/' + r.count}</small>
+              <label>Lançamento<select class="bill-field" data-target>
+                ${r.target === '?' ? '<option value="?">Conferir vínculo com compra existente</option>' : ''}
+                <option value="new" ${r.target === 'new' ? 'selected' : ''}>Nova compra</option>
+                ${r.candidates.map(c => `<option value="${esc(c.purchaseId)}" ${r.target === c.purchaseId ? 'selected' : ''}>${c.confirmed ? 'Já conferida' : 'Conciliar'} · ${esc(c.description)} · ${fmtCents(c.fullCents)} · ${c.splits.map(s => esc(getPerson(s.personId).name)).join(', ')}</option>`).join('')}
+              </select></label>
+              <label>Responsável<select class="bill-field" data-person><option value="" ${r.target !== 'new' ? 'selected' : ''}>Manter rateio da compra</option>${personOptions(r.target === 'new' ? owner : null)}</select></label>
+            </div>`).join('');
+          pdfStatus.textContent = '';
+          review.showModal();
+        } catch (error) {
+          pdfStatus.textContent = 'Não foi possível ler o PDF. Confira o arquivo e a senha, se houver, e tente novamente.';
+        } finally { readButton.disabled = false; }
+      };
+      review.onchange = event => {
+        if (event.target.matches('[data-target]')) {
+          event.target.closest('.review-row').querySelector('[data-person]').value =
+            event.target.value === 'new' ? state.people.find(p => p.isOwner)?.id || '' : '';
+        }
+      };
+      document.getElementById('review-save').onclick = () => {
+        if (!draft) return;
+        const error = document.getElementById('review-error');
+        const selected = [...review.querySelectorAll('.review-row')].filter(el => el.querySelector('[data-include]').checked);
+        if (!selected.length) { error.textContent = 'Selecione pelo menos uma compra.'; return; }
+        const updated = new Map();
+        for (const el of selected) {
+          const row = draft.rows[Number(el.dataset.index)];
+          const target = el.querySelector('[data-target]').value;
+          const person = el.querySelector('[data-person]').value;
+          if (target === '?' || (target === 'new' && !person) || (person && !state.people.some(p => p.id === person))) {
+            error.textContent = 'Confira o lançamento e o responsável de ' + row.description + '.'; return;
+          }
+          if (updated.has(target)) { error.textContent = 'Duas linhas apontam para a mesma compra. Confira os vínculos.'; return; }
+          let cp;
+          if (target === 'new') {
+            cp = {id: 'pdf_' + crypto.randomUUID(), cardId: draft.cardId, date: row.date, startMonth: addMonths(draft.month, 1 - row.index),
+              category: 'Compras', description: row.description, totalCents: row.cents * row.count, installments: row.count};
+          } else {
+            const prev = state.cardPurchases.find(p => p.id === target && p.cardId === draft.cardId);
+            if (!prev) { error.textContent = 'A compra vinculada mudou. Reabra o PDF para conferir.'; return; }
+            cp = {...prev};
+          }
+          if (person) cp.splits = [{personId: person, cents: cp.totalCents}];
+          cp.statementAmounts = {...cp.statementAmounts, [draft.month]: row.cents};
+          updated.set(cp.id, cp);
+        }
+        const originals = new Set(state.cardPurchases.map(p => p.id));
+        state.cardPurchases = [...updated.values()].filter(p => !originals.has(p.id)).concat(state.cardPurchases.map(p => updated.get(p.id) || p));
+        selectedCardId = draft.cardId;
+        saveState();
+        review.close();
+        goToMonth(draft.month);
+        draft = null;
+        pdfStatus.textContent = selected.length + ' lançamento(s) conferido(s).';
+      };
+
+      const desktopNav = document.querySelector('.desktop-navigation');
+      const rail = document.getElementById('icon-rail');
+      const hideDrawer = () => desktopNav.classList.remove('drawer-open');
+      rail.addEventListener('pointerover', event => {
+        if (event.pointerType === 'mouse' && event.target.closest('button')) desktopNav.classList.add('drawer-open');
+      });
+      desktopNav.addEventListener('pointerleave', hideDrawer);
+      desktopNav.addEventListener('focusin', event => {
+        if (event.target.matches(':focus-visible')) desktopNav.classList.add('drawer-open');
+      });
+      desktopNav.addEventListener('focusout', event => {
+        if (!desktopNav.contains(event.relatedTarget)) hideDrawer();
+      });
+      desktopNav.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+          rail.querySelector('[aria-current="page"]')?.focus();
+          hideDrawer();
+        }
+      });
+      // On touch screens the brand button toggles the full menu.
+      rail.querySelector('button').addEventListener('click', event => {
+        if (matchMedia('(hover: none)').matches) {
+          event.stopPropagation();
+          desktopNav.classList.toggle('drawer-open');
+        }
+      });
+      document.addEventListener('pointerdown', event => {
+        if (!desktopNav.contains(event.target)) hideDrawer();
+      });
 
       // Event bindings
       document.addEventListener('click', (e) => {
@@ -1872,14 +2029,17 @@
       });
 
       document.getElementById('global-month-filter').addEventListener('change', renderAll);
-      document.getElementById('btn-prev-month').addEventListener('click', () => {
-        const sel = document.getElementById('global-month-filter');
-        if (sel.selectedIndex > 0) { sel.selectedIndex--; renderAll(); }
-      });
-      document.getElementById('btn-next-month').addEventListener('click', () => {
-        const sel = document.getElementById('global-month-filter');
-        if (sel.selectedIndex < sel.options.length - 1) { sel.selectedIndex++; renderAll(); }
-      });
+      function goToMonth(month) {
+        const select = document.getElementById('global-month-filter');
+        if (!Array.from(select.options).some(option => option.value === month)) {
+          const next = Array.from(select.options).find(option => option.value > month);
+          select.add(new Option(monthLabel(month), month), next || null);
+        }
+        select.value = month;
+        renderAll();
+      }
+      document.getElementById('btn-prev-month').onclick = () => goToMonth(addMonths(getMonth(), -1));
+      document.getElementById('btn-next-month').onclick = () => goToMonth(addMonths(getMonth(), 1));
       document.getElementById('global-search')?.addEventListener('input', (e) => {
         searchTerm = e.target.value || '';
         renderDashboard();
@@ -1934,7 +2094,10 @@
           const v = Math.round((Number(r.querySelector('.split-val').value) || 0) * 100);
           if (v > 0) splits.push({ personId: pid, cents: v });
         });
-        if (splits.length === 0) splits.push({ personId: 'p_italo', cents: totalCents });
+        if (!splits.length && rows.length === 1) splits.push({ personId: rows[0].querySelector('.split-person').value, cents: totalCents });
+        if (splits.reduce((total, part) => total + part.cents, 0) !== totalCents) {
+          showToast('Os valores do rateio precisam somar o total da compra.'); return;
+        }
         const dateVal = document.getElementById('cp-date').value || `${getMonth()}-21`;
         state.cardPurchases.unshift({
           id: `cp_${Date.now()}`,
@@ -2078,7 +2241,7 @@
 
       // Initial render + live market + cloud D1 sync
       populateSelects();
-      renderAll();
+      setView('dashboard');
       fetchMarketData();
 
       if (window.FinancasCloud) {
