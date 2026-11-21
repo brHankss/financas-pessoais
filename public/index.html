@@ -116,10 +116,10 @@
   <link rel="stylesheet" href="/finance.css" />
   <script src="/js/statement-reader.js"></script>
   <link rel="manifest" href="/manifest.json" />
-  <script src="/js/api-sync.js"></script>
+  <script src="/js/api-sync.js?v=fresh-20261121"></script>
 </head>
 <body class="min-h-screen overflow-x-hidden">
-  <div class="flex min-h-screen">
+  <div id="app-shell" class="flex min-h-screen">
     <div class="desktop-navigation">
     <aside id="icon-rail" aria-label="Atalhos de navegação" class="hidden md:flex w-14 flex-col items-center py-4 border-r hairline bg-white dark:bg-[#111319] shrink-0 justify-between">
       <div class="flex flex-col items-center gap-3">
@@ -624,7 +624,10 @@
                   <label class="pg-option"><input type="checkbox" name="investments" checked> Investimentos</label>
                 </fieldset>
                 <label class="block text-sm">Conexões do Meu Pluggy <textarea name="itemIds" class="bill-field block w-full mt-1" rows="2" placeholder="Um itemId por banco autorizado"></textarea></label>
-                <a class="text-sm underline" href="https://meu.pluggy.ai/api-guide" target="_blank" rel="noopener noreferrer">Onde encontrar os IDs de conexão</a>
+                <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                  <a class="underline" href="https://dashboard.pluggy.ai/" target="_blank" rel="noopener noreferrer">Abrir painel do Pluggy</a>
+                  <a class="underline" href="https://docs.pluggy.ai/pt/docs/guides/meu-pluggy-personal-use" target="_blank" rel="noopener noreferrer">Como vincular e encontrar os IDs</a>
+                </div>
                 <label class="pg-option"><input type="checkbox" name="auto"> Atualizar automaticamente todos os dias</label>
                 <p class="text-xs text-zinc-500">Desmarcar uma categoria pausa as próximas leituras e mantém a última posição importada. Os valores são em reais.</p>
                 <div class="bill-toolbar"><button class="bill-btn" type="submit">Salvar preferências</button><button class="bill-btn bill-primary" type="button" id="pg-sync" disabled>Sincronizar agora</button></div>
@@ -632,7 +635,12 @@
               <p id="pg-history" class="text-xs text-zinc-500"></p><p id="pg-status" role="status" class="text-sm"></p>
             </div>
             <div class="card rounded-2xl p-5 space-y-2"><h3 class="font-bold">Aplicações importadas</h3>
-              <p class="text-sm text-zinc-500">Marque as aplicações que devem compor o patrimônio.</p><div id="pg-assets"></div><p id="pg-total" class="font-semibold"></p>
+              <p class="text-sm text-zinc-500">Marque as aplicações que devem compor o patrimônio.</p>
+              <div id="pg-assets"></div>
+              <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm" aria-live="polite">
+                <p id="pg-imported-total" class="text-zinc-500"></p>
+                <p id="pg-total" class="font-semibold"></p>
+              </div>
             </div>
             <button type="button" class="bill-btn" data-view="cards">Importar fatura de cartão em PDF</button>
             <button type="button" class="bill-btn" data-view="settings">Cadastros manuais e ajustes</button>
@@ -704,15 +712,8 @@
               <button type="button" data-view="settings" title="Ajustes" class="w-7 h-7 rounded-lg bg-white/80 dark:bg-zinc-900/70 backdrop-blur flex items-center justify-center text-zinc-700 dark:text-zinc-200"><i data-lucide="settings-2" class="w-3.5 h-3.5"></i></button>
             </div>
             <div class="px-4 pb-4 -mt-6 relative">
-              <div class="w-12 h-12 rounded-full bg-zinc-900 dark:bg-blue-600 text-white border-4 border-white dark:border-[#12141B] flex items-center justify-center font-extrabold text-sm shadow">IT</div>
-              <div class="mt-2 flex items-center gap-1.5">
-                <h3 class="text-sm font-bold">Ítalo Matheus</h3>
-                <span class="w-4 h-4 rounded-full bg-blue-600 text-white inline-flex items-center justify-center text-[9px] font-bold">✓</span>
-              </div>
-              <p class="text-[11px] text-zinc-400 flex items-center gap-1.5">
-                <span>@financas-pessoais</span>
-                <span class="px-1.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold text-[10px]">Online</span>
-              </p>
+              <div id="owner-initials" aria-hidden="true" class="w-12 h-12 rounded-full bg-zinc-900 dark:bg-blue-600 text-white border-4 border-white dark:border-[#12141B] flex items-center justify-center font-extrabold text-sm shadow">FP</div>
+              <h3 id="owner-name" class="mt-2 text-sm font-bold">Titular a cadastrar</h3>
 
               <div class="grid grid-cols-2 gap-2 mt-3">
                 <div class="p-2.5 rounded-xl bg-zinc-50 dark:bg-[#1B1E28] border hairline">
@@ -952,8 +953,14 @@
 
   <script>
     (function () {
-      const STORAGE_KEY = 'financas_pessoais_fresh_20261121';
-      try { localStorage.removeItem('financas_pessoais_v3_state'); } catch {}
+      const WORKSPACE_VERSION = 'fresh-20261121';
+      const STORAGE_KEY = `financas_pessoais_${WORKSPACE_VERSION.replace('-', '_')}`;
+      try {
+        const previousKeys = ['financas_pessoais_v3_state', 'fincontrol_saffron_orb_v7', 'financas_cloud_synced'];
+        for (const key of Object.keys(localStorage)) {
+          if (previousKeys.includes(key) || key.startsWith('financas_cloud_pending:')) localStorage.removeItem(key);
+        }
+      } catch {}
       const monthLabel = key => new Intl.DateTimeFormat('pt-BR', { month: 'short', year: 'numeric' }).format(new Date(key + '-15T12:00:00'));
       const CATEGORIES = ['Alimentação', 'Moradia', 'Saúde', 'Educação', 'Transporte', 'Lazer', 'Compras', 'Assinaturas', 'Salário', 'Extra', 'Outros'];
 
@@ -1159,7 +1166,7 @@
         };
         document.getElementById('header-title').textContent = titles[v] || 'Resumo geral';
         renderAll();
-        if (v === 'imports') loadPluggy().catch(e=>{statusLine.textContent=e.message});
+        if (v === 'imports') loadPluggy().catch(showPluggyLoadError);
         if (v === 'market' && marketData.quotes.length === 0) fetchMarketData();
       }
 
@@ -1167,6 +1174,10 @@
       function closeModal(id) { document.getElementById(id)?.classList.add('hidden'); }
 
       function renderSidebarAndRightPanel() {
+        const owner = state.people.find((person) => person.isOwner);
+        document.getElementById('owner-name').textContent = owner?.name || 'Titular a cadastrar';
+        document.getElementById('owner-initials').textContent = owner?.name.trim().split(/\s+/).slice(0, 2)
+          .map((name) => name[0]).join('').toLocaleUpperCase('pt-BR') || 'FP';
         const mKey = getMonth();
         const mRows = getMonthInstallments(mKey);
         const cash = allAccounts().reduce((s, a) => s + a.balance, 0);
@@ -1837,43 +1848,66 @@
 
       const pgForm = document.getElementById('pg-form');
       const statusLine = document.getElementById('pg-status');
+      const syncButton = document.getElementById('pg-sync');
+      const assetsList = document.getElementById('pg-assets');
       let preferencesDirty = false;
+      let importBusy = false;
+      let statusRequest = 0;
       pgForm.oninput = () => { preferencesDirty = true; };
       const pgGroups = ['accounts','cards','investments','auto'];
       async function pgApi(action, body) {
         const options = body === undefined ? {} : {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)};
         const res = await fetch('/api/pluggy/' + action, options);
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Falha ao acessar a integração.');
+        if (!res.ok) {
+          const error = new Error(data.error || 'Falha ao acessar a integração.');
+          error.status = res.status;
+          throw error;
+        }
         return data;
+      }
+      function showPluggyLoadError(error) {
+        if (currentView === 'imports' && error.status !== 401 && !importBusy) statusLine.textContent = error.message;
+      }
+      function readPluggyDraft() {
+        try { return JSON.parse(localStorage.getItem('pg-draft-v1')); } catch { return null; }
+      }
+      function updateImportControls() {
+        for (const field of pgForm.elements) {
+          field.disabled = importBusy || (field === pgForm.elements.itemIds && !integration?.protectedApp);
+        }
+        syncButton.disabled = importBusy || !integration?.ready;
+        for (const checkbox of assetsList.querySelectorAll('input')) checkbox.disabled = importBusy;
       }
       function pgSummary() {
         const assets = imported('investments');
-        document.getElementById('pg-assets').innerHTML = assets.map(a => `
+        assetsList.innerHTML = assets.map(a => `
           <label class="pg-option pg-invest"><input type="checkbox" data-position="${esc(a.id)}" ${a.excluded ? '' : 'checked'}>
           <span>${esc(a.name)}<small>${esc(a.detail)}</small></span><b>${fmtBRL(a.gross)}</b></label>`).join('') ||
           '<p class="text-sm py-3">Nenhuma aplicação importada.</p>';
+        document.getElementById('pg-imported-total').textContent = 'Total importado: ' + fmtBRL(assets.reduce((s, i) => s + i.gross, 0));
         document.getElementById('pg-total').textContent = 'Contabilizado: ' + fmtBRL(includedRemote().reduce((s,i)=>s+i.gross,0));
       }
       function renderImport() {
         if (!integration) return;
-        const {ready, protectedApp, prefs, last_sync, status} = integration;
-        const saved = localStorage.getItem('pg-draft-v1');
-        const config = saved ? {...prefs,...JSON.parse(saved)} : prefs;
+        const {ready, prefs, last_sync, status} = integration;
+        const config = {...prefs, ...readPluggyDraft()};
         if (!preferencesDirty) {
           for (const key of pgGroups) pgForm.elements.namedItem(key).checked = config[key];
           pgForm.elements.itemIds.value = prefs.itemIds.join('\n');
         }
-        pgForm.elements.itemIds.disabled = !protectedApp;
-        document.getElementById('pg-sync').disabled = !ready;
         document.getElementById('pg-worker-settings').hidden = ready;
         document.getElementById('pg-setup').textContent = ready ? 'Conecte seus bancos no Meu Pluggy e informe os IDs da aplicação.' :
           'Para ativar a conexão, configure os secrets APP_PASSWORD, PLUGGY_CLIENT_ID e PLUGGY_CLIENT_SECRET no Worker financas-pessoais. Depois entre no app e salve os IDs dos bancos.';
         document.getElementById('pg-history').textContent = status || (last_sync ? 'Última atualização: ' + new Date(last_sync).toLocaleString('pt-BR') : 'Nenhuma sincronização realizada.');
         pgSummary();
+        updateImportControls();
       }
       async function loadPluggy() {
-        integration = await pgApi('status');
+        const requestId = ++statusRequest;
+        const next = await pgApi('status');
+        if (requestId !== statusRequest) return;
+        integration = next;
         if (!allCards().some(c=>c.id===selectedCardId)) selectedCardId=allCards()[0]?.id || '';
         renderImport(); populateSelects(); renderAll();
       }
@@ -1890,26 +1924,35 @@
       }
       pgForm.onsubmit = async event => {
         event.preventDefault();
+        if (importBusy) return;
+        importBusy = true;
+        updateImportControls();
         try { const saved = await savePluggy(); await loadPluggy(); statusLine.textContent = saved ? 'Preferências salvas.' : 'Preferências salvas neste navegador. Ative a conexão para sincronizar.'; }
         catch(e){statusLine.textContent=e.message;}
+        finally { importBusy = false; updateImportControls(); }
       };
-      document.getElementById('pg-sync').onclick = async event => {
-        event.target.disabled = true; statusLine.textContent='Consultando a Pluggy…';
+      syncButton.onclick = async () => {
+        if (importBusy) return;
+        importBusy = true;
+        updateImportControls();
+        statusLine.textContent='Consultando a Pluggy…';
         try {
-          if (preferencesDirty || localStorage.getItem('pg-draft-v1')) await savePluggy();
+          if (preferencesDirty || readPluggyDraft()) await savePluggy();
           await pgApi('sync',{}); await loadPluggy();
           statusLine.textContent='Dados atualizados.';
-        } catch(e) {statusLine.textContent=e.message;} finally {event.target.disabled=!integration?.ready;}
+        } catch(e) {statusLine.textContent=e.message;} finally { importBusy = false; updateImportControls(); }
       };
-      document.getElementById('pg-assets').onchange = async event => {
+      assetsList.onchange = async event => {
         const el=event.target;
-        if (!el.dataset.position) return;
-        el.disabled=true;
+        if (!el.dataset.position || importBusy) return;
+        importBusy = true;
+        updateImportControls();
         try {
           await pgApi('inclusion',{id:el.dataset.position,included:el.checked});
           await loadPluggy();
           statusLine.textContent='Seleção do patrimônio atualizada.';
-        } catch(e) {el.checked=!el.checked;el.disabled=false;statusLine.textContent=e.message;}
+        } catch(e) {el.checked=!el.checked;statusLine.textContent=e.message;}
+        finally { importBusy = false; updateImportControls(); }
       };
 
       const review = document.getElementById('statement-dialog');
@@ -2363,6 +2406,11 @@
 
       if (window.FinancasCloud) {
         window.FinancasCloud.init({
+          workspaceVersion: WORKSPACE_VERSION,
+          setLocked: (locked) => {
+            document.getElementById('app-shell').inert = locked;
+            document.getElementById('mobile-nav').inert = locked;
+          },
           getState: () => state,
           setState: (cloudState) => {
             if (cloudState && Array.isArray(cloudState.accounts)) {
@@ -2374,7 +2422,7 @@
               renderAll();
             }
           },
-          onRender: () => { populateSelects(); renderAll(); loadPluggy().catch(()=>{}); },
+          onRender: () => { populateSelects(); renderAll(); loadPluggy().catch(showPluggyLoadError); },
           showToast,
         });
       }

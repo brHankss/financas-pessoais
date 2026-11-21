@@ -1,4 +1,5 @@
 import type { Env } from '../types';
+import { ensureSchema } from './db';
 import { parseCookies } from './http';
 
 const SESSION_COOKIE = 'financas_session';
@@ -83,6 +84,7 @@ export async function isAuthenticated(env: Env, request: Request): Promise<boole
     return false;
   }
 
+  await ensureSchema(env.DB);
   const tokenHash = await sessionHash(env, token);
   const row = await env.DB.prepare(
     'SELECT expires_at FROM sessions WHERE token_hash = ?'
