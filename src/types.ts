@@ -75,7 +75,7 @@ export interface BankTransaction {
   id: string;
   date: string;
   description: string;
-  type: 'income' | 'expense';
+  type: 'income' | 'expense' | 'reimbursement_in' | 'bill_payment';
   category: string;
   accountId: string;
   amount: number;

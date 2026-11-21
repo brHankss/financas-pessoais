@@ -12,6 +12,26 @@ import type {
 } from '../types';
 
 let schemaInitialized = false;
+const INITIAL_REVISION = 'initial';
+
+async function hasSavedState(db: D1Database): Promise<boolean> {
+  const row = await db.prepare(
+    "SELECT 1 FROM app_settings WHERE key = 'theme' UNION ALL SELECT 1 FROM accounts LIMIT 1"
+  ).first();
+  return row !== null;
+}
+
+function bankTransactionType(type: unknown, id: string, category: string): BankTransaction['type'] {
+  if (type === 'income' || type === 'bill_payment' || type === 'reimbursement_in') return type;
+
+  // Versões anteriores gravavam esses lançamentos como despesas.
+  if (type === 'expense') {
+    if (/^bt_p_\d+$/.test(id) && category === 'Transferência') return 'bill_payment';
+    if (/^bt_r_\d+$/.test(id) && category === 'Reembolso') return 'reimbursement_in';
+  }
+
+  return 'expense';
+}
 
 export function getDefaultState(): FinancialState {
   return {
@@ -87,15 +107,20 @@ export async function ensureSchema(db: D1Database): Promise<void> {
 
   await db.batch(ddl.map((sql) => db.prepare(sql)));
 
-  const existing = await db.prepare('SELECT COUNT(*) as total FROM accounts').first<{ total: number }>();
-  if (!existing || existing.total === 0) {
-    await saveFullState(db, getDefaultState());
+  if (!(await hasSavedState(db))) {
+    try {
+      await saveFullState(db, getDefaultState(), { initialize: true });
+    } catch (error) {
+      if (!(await hasSavedState(db))) throw error;
+    }
   }
+  await db.prepare("INSERT OR IGNORE INTO app_settings (key, value) VALUES ('stateRevision', ?)")
+    .bind(INITIAL_REVISION).run();
 
   schemaInitialized = true;
 }
 
-export async function loadFullState(db: D1Database): Promise<FinancialState> {
+export async function loadFullState(db: D1Database): Promise<{ state: FinancialState; revision: string }> {
   await ensureSchema(db);
 
   const [
@@ -210,7 +235,7 @@ export async function loadFullState(db: D1Database): Promise<FinancialState> {
     id: String(r.id),
     date: String(r.tx_date),
     description: String(r.description),
-    type: String(r.tx_type) === 'income' ? 'income' : 'expense',
+    type: bankTransactionType(r.tx_type, String(r.id), String(r.category)),
     category: String(r.category || 'Outros'),
     accountId: String(r.account_id),
     amount: Number(r.amount) || 0,
@@ -226,22 +251,30 @@ export async function loadFullState(db: D1Database): Promise<FinancialState> {
   }));
 
   return {
-    theme: settingsMap.get('theme') === 'light' ? 'light' : 'dark',
-    monthlyBudgetCap: Number(settingsMap.get('monthlyBudgetCap')) || 12000,
-    marketRates,
-    accounts,
-    cards,
-    people,
-    cardPurchases,
-    personEvents,
-    fixedIncomes,
-    bankTransactions,
-    investments,
+    revision: settingsMap.get('stateRevision') ?? INITIAL_REVISION,
+    state: {
+      theme: settingsMap.get('theme') === 'light' ? 'light' : 'dark',
+      monthlyBudgetCap: Number(settingsMap.get('monthlyBudgetCap')) || 12000,
+      marketRates,
+      accounts,
+      cards,
+      people,
+      cardPurchases,
+      personEvents,
+      fixedIncomes,
+      bankTransactions,
+      investments,
+    },
   };
 }
 
-export async function saveFullState(db: D1Database, state: FinancialState): Promise<void> {
-  const stmts: D1PreparedStatement[] = [
+export async function saveFullState(
+  db: D1Database,
+  state: FinancialState,
+  { initialize = false, expectedRevision }: { initialize?: boolean; expectedRevision?: string } = {},
+): Promise<string | null> {
+  const revision = crypto.randomUUID();
+  const stmts: D1PreparedStatement[] = initialize ? [] : [
     db.prepare('DELETE FROM card_purchase_splits'),
     db.prepare('DELETE FROM card_purchases'),
     db.prepare('DELETE FROM person_events'),
@@ -251,16 +284,21 @@ export async function saveFullState(db: D1Database, state: FinancialState): Prom
     db.prepare('DELETE FROM cards'),
     db.prepare('DELETE FROM people'),
     db.prepare('DELETE FROM accounts'),
-    db.prepare(
-      "INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES ('theme', ?, datetime('now'))"
-    ).bind(state.theme === 'light' ? 'light' : 'dark'),
-    db.prepare(
-      "INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES ('monthlyBudgetCap', ?, datetime('now'))"
-    ).bind(String(Number(state.monthlyBudgetCap) || 12000)),
-    db.prepare(
-      "INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES ('marketRates', ?, datetime('now'))"
-    ).bind(JSON.stringify(state.marketRates || { cdi: 13.65, ipca: 4.5, irRate: 0.175 })),
   ];
+  if (expectedRevision !== undefined) {
+    // A restrição NOT NULL cancela todo o lote se outra gravação já mudou a revisão.
+    stmts.unshift(db.prepare(
+      "UPDATE app_settings SET value = CASE WHEN value = ? THEN value ELSE NULL END WHERE key = 'stateRevision'"
+    ).bind(expectedRevision));
+  }
+  const setting = db.prepare(
+    `INSERT ${initialize ? '' : 'OR REPLACE '}INTO app_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))`
+  );
+  stmts.push(
+    setting.bind('theme', state.theme === 'light' ? 'light' : 'dark'),
+    setting.bind('monthlyBudgetCap', String(Number(state.monthlyBudgetCap) || 12000)),
+    setting.bind('marketRates', JSON.stringify(state.marketRates || { cdi: 13.65, ipca: 4.5, irRate: 0.175 })),
+  );
 
   (state.accounts || []).forEach((a, idx) => {
     stmts.push(
@@ -321,7 +359,7 @@ export async function saveFullState(db: D1Database, state: FinancialState): Prom
     stmts.push(
       db.prepare(
         'INSERT INTO bank_transactions (id, tx_date, description, tx_type, category, account_id, amount) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      ).bind(bt.id, bt.date, bt.description, bt.type === 'income' ? 'income' : 'expense', bt.category || 'Outros', bt.accountId, Number(bt.amount) || 0)
+      ).bind(bt.id, bt.date, bt.description, bankTransactionType(bt.type, bt.id, bt.category), bt.category || 'Outros', bt.accountId, Number(bt.amount) || 0)
     );
   });
 
@@ -333,7 +371,18 @@ export async function saveFullState(db: D1Database, state: FinancialState): Prom
     );
   });
 
-  await db.batch(stmts);
+  stmts.push(db.prepare("INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES ('stateRevision', ?, datetime('now'))")
+    .bind(revision));
+  try {
+    await db.batch(stmts);
+  } catch (error) {
+    if (expectedRevision !== undefined) {
+      const current = await db.prepare("SELECT value FROM app_settings WHERE key = 'stateRevision'").first<string>('value');
+      if (current !== expectedRevision) return null;
+    }
+    throw error;
+  }
+  return revision;
 }
 
 export async function getDbStats(db: D1Database): Promise<Record<string, number>> {

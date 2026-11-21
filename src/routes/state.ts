@@ -1,4 +1,5 @@
-import type { Env, FinancialState } from '../types';
+import { isFinancialState } from '../../public/js/financial-state.js';
+import type { Env } from '../types';
 import { ensureSchema, getDefaultState, loadFullState, saveFullState } from '../lib/db';
 import { errorJson, json, parseJsonBody } from '../lib/http';
 
@@ -12,12 +13,13 @@ export async function handleStateRoutes(request: Request, env: Env, pathname: st
         state: null,
       });
     }
-    const state = await loadFullState(env.DB);
+    const { state, revision } = await loadFullState(env.DB);
     return json({
       ok: true,
       storage: 'cloudflare-d1',
       d1Connected: true,
       state,
+      revision,
     });
   }
 
@@ -29,17 +31,22 @@ export async function handleStateRoutes(request: Request, env: Env, pathname: st
         d1Connected: false,
       });
     }
-    const body = await parseJsonBody<{ state?: FinancialState }>(request);
-    if (!body?.state || !Array.isArray(body.state.accounts) || !Array.isArray(body.state.cards)) {
+    const body = await parseJsonBody<{ state?: unknown; revision?: unknown }>(request);
+    if (!body || !isFinancialState(body.state)) {
       return errorJson('Estrutura de estado inválida.', 400);
     }
+    if (body.revision !== undefined && typeof body.revision !== 'string') {
+      return errorJson('Revisão de estado inválida.', 400);
+    }
     await ensureSchema(env.DB);
-    await saveFullState(env.DB, body.state);
+    const revision = await saveFullState(env.DB, body.state, { expectedRevision: body.revision });
+    if (revision === null) return errorJson('Os dados na nuvem mudaram desde a última leitura.', 409);
     return json({
       ok: true,
       storage: 'cloudflare-d1',
       d1Connected: true,
       savedAt: new Date().toISOString(),
+      revision,
     });
   }
 

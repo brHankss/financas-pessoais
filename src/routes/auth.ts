@@ -18,7 +18,13 @@ export async function handleAuthRoutes(request: Request, env: Env, pathname: str
     if (!valid) {
       return errorJson('Senha incorreta.', 401);
     }
-    const { cookie } = await createSession(env, body.deviceName || 'Navegador');
+    if (!env.DB) {
+      return isAuthRequired(env)
+        ? errorJson('Vincule o banco D1 para iniciar a sessão.', 503)
+        : json({ ok: true, authenticated: true });
+    }
+    const deviceName = typeof body.deviceName === 'string' ? body.deviceName : 'Navegador';
+    const cookie = await createSession(env.DB, deviceName);
     return json({ ok: true, authenticated: true }, 200, { 'set-cookie': cookie });
   }
 

@@ -1,4 +1,5 @@
 import type { Env } from '../types';
+import { ensureSchema } from './db';
 import { parseCookies } from './http';
 
 const SESSION_COOKIE = 'financas_session';
@@ -39,29 +40,27 @@ export async function verifyPassword(env: Env, password: string): Promise<boolea
   return timingSafeEqual(a, b);
 }
 
-export async function createSession(env: Env, deviceName: string): Promise<{ token: string; cookie: string }> {
+export async function createSession(db: D1Database, deviceName: string): Promise<string> {
+  await ensureSchema(db);
+
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
   const token = toHex(bytes.buffer);
   const tokenHash = await sha256Hex(token);
   const expiresAt = new Date(Date.now() + SESSION_TTL_SECONDS * 1000).toISOString();
 
-  if (env.DB) {
-    await env.DB.prepare(
-      'INSERT INTO sessions (token_hash, device_name, expires_at) VALUES (?, ?, ?)'
-    )
-      .bind(tokenHash, deviceName.slice(0, 80) || 'Navegador', expiresAt)
-      .run();
-  }
+  await db.prepare('INSERT INTO sessions (token_hash, device_name, expires_at) VALUES (?, ?, ?)')
+    .bind(tokenHash, deviceName.slice(0, 80) || 'Navegador', expiresAt)
+    .run();
 
-  const cookie = `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_TTL_SECONDS}`;
-  return { token, cookie };
+  return `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_TTL_SECONDS}`;
 }
 
 export async function revokeSession(env: Env, request: Request): Promise<string> {
   const cookies = parseCookies(request.headers.get('cookie'));
   const token = cookies[SESSION_COOKIE];
   if (token && env.DB) {
+    await ensureSchema(env.DB);
     const tokenHash = await sha256Hex(token);
     await env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(tokenHash).run();
   }
@@ -70,14 +69,12 @@ export async function revokeSession(env: Env, request: Request): Promise<string>
 
 export async function isAuthenticated(env: Env, request: Request): Promise<boolean> {
   if (!isAuthRequired(env)) return true;
+  if (!env.DB) return false;
   const cookies = parseCookies(request.headers.get('cookie'));
   const token = cookies[SESSION_COOKIE];
   if (!token) return false;
 
-  if (!env.DB) {
-    return token.length === 64;
-  }
-
+  await ensureSchema(env.DB);
   const tokenHash = await sha256Hex(token);
   const row = await env.DB.prepare(
     'SELECT expires_at FROM sessions WHERE token_hash = ?'
