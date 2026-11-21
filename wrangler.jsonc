@@ -1,18 +1,20 @@
 {
+  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "financas-pessoais",
-  "version": "2.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "typecheck": "tsc --noEmit",
-    "db:migrate:local": "wrangler d1 migrations apply financas-pessoais-db --local",
-    "db:migrate:remote": "wrangler d1 migrations apply financas-pessoais-db --remote"
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-11-20",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
   },
-  "devDependencies": {
-    "@cloudflare/workers-types": "latest",
-    "typescript": "latest",
-    "wrangler": "latest"
-  }
+  "observability": {
+    "enabled": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "financas-pessoais-db",
+      "database_id": "29bb07cd-fd88-45da-ae94-138c6dd82cc5"
+    }
+  ]
 }
