@@ -157,8 +157,26 @@
       if (!d1Enabled) return;
       if (saveTimer) clearTimeout(saveTimer);
       saveTimer = setTimeout(() => {
+        saveTimer = null;
         pushToCloud(stateObj);
       }, 400);
+    },
+
+    async flushSave(stateObj) {
+      if (!d1Enabled) return;
+      if (saveTimer) {
+        clearTimeout(saveTimer);
+        saveTimer = null;
+      }
+      await pushToCloud(stateObj);
+    },
+
+    async pullFromCloud() {
+      await pullFromCloud();
+    },
+
+    isD1Enabled() {
+      return d1Enabled;
     },
   };
 })();

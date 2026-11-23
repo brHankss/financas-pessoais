@@ -12,11 +12,14 @@ export interface MarketRates {
   irRate: number;
 }
 
+export type OriginKind = 'Manual' | 'Pluggy' | 'Vinculado';
+
 export interface Account {
   id: string;
   name: string;
   balance: number;
   color: string;
+  includeInCash?: boolean;
 }
 
 export interface Card {
@@ -52,6 +55,9 @@ export interface CardPurchase {
   installments: number;
   splits: PurchaseSplit[];
   statementAmounts?: Record<string, number>;
+  source?: 'manual' | 'pluggy' | 'statement';
+  externalId?: string | null;
+  importKey?: string | null;
 }
 
 export interface PersonEvent {
@@ -82,6 +88,8 @@ export interface BankTransaction {
   category: string;
   accountId: string;
   amount: number;
+  source?: 'manual' | 'pluggy';
+  externalId?: string | null;
 }
 
 export interface Investment {
@@ -108,3 +116,75 @@ export interface FinancialState {
 }
 
 export type ImportGroup = 'accounts' | 'cards' | 'investments';
+
+export interface PluggyPreferences {
+  accounts: boolean;
+  cards: boolean;
+  investments: boolean;
+  itemIds: string[];
+  auto: boolean;
+  syncTransactions: boolean;
+  txDays: number;
+}
+
+export interface PluggyPosition {
+  id: string;
+  item: string;
+  category: ImportGroup;
+  pluggyAccountId?: string;
+  name: string;
+  excluded: boolean;
+  linkedTargetId: string | null;
+  balance?: number;
+  color?: string;
+  last4?: string;
+  institution?: string;
+  closeDay?: number | string;
+  dueDay?: number | string;
+  limit?: number | null;
+  bankBalance?: number | null;
+  committedLimit?: number | null;
+  gross?: number;
+  detail?: string;
+}
+
+export interface PluggyLink {
+  pluggyId: string;
+  category: ImportGroup;
+  targetId: string;
+}
+
+export interface PluggySyncSummary {
+  accounts: number;
+  cards: number;
+  investments: number;
+  newBankTx: number;
+  skippedBankTx: number;
+  newCardPurchases: number;
+  skippedCardPurchases: number;
+}
+
+export interface StatementImportRow {
+  date: string;
+  description: string;
+  cents: number;
+  index: number;
+  count: number;
+  category?: string;
+  personId?: string;
+}
+
+export interface StatementImportPlanItem extends StatementImportRow {
+  baseSignature: string;
+  occurrenceIndex: number;
+  importKey: string;
+  duplicate: boolean;
+  matchedPurchaseId: string | null;
+}
+
+export interface StatementImportResult {
+  added: number;
+  ignored: number;
+  addedPurchases: CardPurchase[];
+  ignoredKeys: string[];
+}

@@ -252,7 +252,14 @@
           <!-- VIEW: DASHBOARD -->
           <section id="view-dashboard" class="space-y-5">
             <div class="overview-grid">
-              <article class="metric balance"><h2>Dinheiro disponível</h2><strong id="kpi-cash"></strong><p id="kpi-cash-sub"></p></article>
+              <article class="metric balance">
+                <div class="flex items-center justify-between gap-2">
+                  <h2>Dinheiro disponível</h2>
+                  <button type="button" data-view="imports" class="text-[11px] font-semibold underline opacity-90 hover:opacity-100">Origens</button>
+                </div>
+                <strong id="kpi-cash"></strong>
+                <p id="kpi-cash-sub"></p>
+              </article>
               <article class="metric"><h2>Faturas do mês</h2><strong id="kpi-bill"></strong><p id="kpi-bill-sub"></p></article>
               <article class="metric"><h2>A receber de terceiros</h2><strong id="kpi-recv"></strong><p id="kpi-recv-sub"></p></article>
             </div>
@@ -347,7 +354,7 @@
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 class="text-base font-bold">Cartões de crédito e rateio</h2>
-                <p class="text-xs text-zinc-500 dark:text-zinc-400">Divida compras entre titular, família e negócios sem misturar no seu orçamento.</p>
+                <p class="text-xs text-zinc-500 dark:text-zinc-400">Total focado apenas nas compras e parcelas da fatura do mês selecionado, com rateio por pessoa.</p>
               </div>
               <div class="flex items-center gap-2">
                 <button type="button" id="cards-btn-settle" class="h-9 px-3 rounded-xl border hairline bg-white dark:bg-[#1B1E28] text-xs font-semibold">Registrar acerto</button>
@@ -361,13 +368,16 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div class="lg:col-span-2 card rounded-2xl p-5">
                 <div class="flex items-center justify-between mb-3">
-                  <h3 id="card-detail-title" class="text-sm font-bold">Fatura do cartão</h3>
+                  <div>
+                    <h3 id="card-detail-title" class="text-sm font-bold">Fatura do cartão</h3>
+                    <p id="card-detail-sub" class="text-[11px] text-zinc-400"></p>
+                  </div>
                   <span id="card-detail-total" class="text-sm font-extrabold tabular-nums">R$ 0,00</span>
                 </div>
                 <div class="bill-toolbar">
-                  <button type="button" class="bill-btn bill-primary" id="read-statement">Importar fatura PDF</button>
+                  <button type="button" class="bill-btn bill-primary" id="read-statement">Importar fatura (PDF/CSV)</button>
                   <button type="button" class="bill-btn" id="bill-new-person">Cadastrar pessoa</button>
-                  <input hidden type="file" accept=".pdf,application/pdf" id="statement-file">
+                  <input hidden type="file" accept=".pdf,.csv,application/pdf,text/csv" id="statement-file">
                 </div>
                 <p id="pdf-status" role="status" class="text-sm mb-2"></p>
                 <div id="card-items-list" class="divide-y hairline"></div>
@@ -612,35 +622,106 @@
           </section>
 
           <section id="view-imports" class="hidden space-y-5">
-            <div><h2 class="text-xl font-bold">Importação</h2><p class="text-sm mt-1 text-zinc-500">Escolha quais dados entram no seu painel.</p></div>
+            <div>
+              <h2 class="text-xl font-bold">Importação e origem dos saldos</h2>
+              <p class="text-sm mt-1 text-zinc-500">Organize contas, cartões e investimentos do Meu Pluggy, vincule cadastros manuais para evitar duplicação e escolha o que entra no Dinheiro disponível.</p>
+            </div>
+
             <div class="card rounded-2xl p-5 space-y-4">
-              <div class="flex items-center justify-between flex-wrap gap-3"><h3 class="font-bold">Meu Pluggy</h3><a class="bill-btn" href="https://meu.pluggy.ai/" target="_blank" rel="noopener noreferrer">Abrir Meu Pluggy</a></div>
+              <div class="flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <h3 class="font-bold">Conexão Meu Pluggy</h3>
+                  <p class="text-xs text-zinc-500">Saldos, aplicações e transações individuais via API da Pluggy.</p>
+                </div>
+                <a class="bill-btn" href="https://meu.pluggy.ai/" target="_blank" rel="noopener noreferrer">Abrir Meu Pluggy</a>
+              </div>
               <p id="pg-setup" class="text-sm"></p>
               <a id="pg-worker-settings" class="text-sm underline" target="_blank" rel="noopener noreferrer" href="https://dash.cloudflare.com/b4c489d73004381883e4c2d11b656b1e/workers/services/view/financas-pessoais/production/settings">Configurar credenciais no Worker</a>
               <form id="pg-form" class="space-y-3">
                 <fieldset class="space-y-2"><legend class="text-sm font-bold mb-1">Dados a atualizar</legend>
-                  <label class="pg-option"><input type="checkbox" name="accounts" checked> Saldos de contas</label>
-                  <label class="pg-option"><input type="checkbox" name="cards"> Cartões de crédito <small>Cadastro e saldo informado pelo banco</small></label>
+                  <label class="pg-option"><input type="checkbox" name="accounts" checked> Contas bancárias <small>Saldo e movimentações individuais (extrato)</small></label>
+                  <label class="pg-option"><input type="checkbox" name="cards"> Cartões de crédito <small>Cadastro, limite comprometido (secundário) e compras individuais</small></label>
                   <label class="pg-option"><input type="checkbox" name="investments" checked> Investimentos</label>
                 </fieldset>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <label class="pg-option"><input type="checkbox" name="syncTransactions" checked> Puxar gastos individuais (/transactions)</label>
+                  <label class="text-xs font-medium text-zinc-600 dark:text-zinc-300 flex items-center gap-2">
+                    <span>Período das transações</span>
+                    <select name="txDays" class="bill-field">
+                      <option value="30">Últimos 30 dias</option>
+                      <option value="60">Últimos 60 dias</option>
+                      <option value="90" selected>Últimos 90 dias</option>
+                      <option value="180">Últimos 180 dias</option>
+                    </select>
+                  </label>
+                </div>
                 <label class="block text-sm">Conexões do Meu Pluggy <textarea name="itemIds" class="bill-field block w-full mt-1" rows="2" placeholder="Um itemId por banco autorizado"></textarea></label>
                 <a class="text-sm underline" href="https://meu.pluggy.ai/api-guide" target="_blank" rel="noopener noreferrer">Onde encontrar os IDs de conexão</a>
                 <label class="pg-option"><input type="checkbox" name="auto"> Atualizar automaticamente todos os dias</label>
                 <p class="text-xs text-zinc-500">Desmarcar uma categoria pausa as próximas leituras e mantém a última posição importada. Os valores são em reais.</p>
                 <div class="bill-toolbar"><button class="bill-btn" type="submit">Salvar preferências</button><button class="bill-btn bill-primary" type="button" id="pg-sync" disabled>Sincronizar agora</button></div>
               </form>
-              <p id="pg-history" class="text-xs text-zinc-500"></p><p id="pg-status" role="status" class="text-sm"></p>
+              <p id="pg-history" class="text-xs text-zinc-500"></p>
+              <p id="pg-status" role="status" class="text-sm font-medium"></p>
             </div>
-            <div class="card rounded-2xl p-5 space-y-2"><h3 class="font-bold">Aplicações importadas</h3>
-              <p class="text-sm text-zinc-500">Marque as aplicações que devem compor o patrimônio.</p><div id="pg-assets"></div><p id="pg-total" class="font-semibold"></p>
+
+            <!-- Painel de controle de Dinheiro disponível (Manual vs Pluggy vs Vinculado) -->
+            <div class="card rounded-2xl p-5 space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 class="font-bold">Contas e Dinheiro disponível</h3>
+                  <p class="text-xs text-zinc-500">Escolha exatamente quais contas entram no KPI "Dinheiro disponível" do resumo geral. Contas vinculadas ao Pluggy atualizam o saldo sem duplicar.</p>
+                </div>
+                <span id="cash-organizer-total" class="text-sm font-extrabold tabular-nums">R$ 0,00</span>
+              </div>
+              <div id="accounts-cash-organizer" class="divide-y hairline"></div>
             </div>
-            <button type="button" class="bill-btn" data-view="cards">Importar fatura de cartão em PDF</button>
-            <button type="button" class="bill-btn" data-view="settings">Cadastros manuais e ajustes</button>
+
+            <!-- Painel de organização item por item do Meu Pluggy -->
+            <div class="card rounded-2xl p-5 space-y-5">
+              <div>
+                <h3 class="font-bold">Organização dos itens do Meu Pluggy</h3>
+                <p class="text-xs text-zinc-500">Ative ou ignore cada item no cálculo total e vincule itens do Pluggy a contas, cartões ou investimentos manuais para substituir o saldo em vez de duplicar.</p>
+              </div>
+
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-zinc-500">Contas bancárias (Pluggy)</h4>
+                  <span id="pg-org-accounts-summary" class="text-xs font-semibold tabular-nums"></span>
+                </div>
+                <div id="pg-org-accounts"></div>
+              </div>
+
+              <div class="space-y-2 pt-3 border-t hairline">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-zinc-500">Cartões de crédito (Pluggy)</h4>
+                  <span id="pg-org-cards-summary" class="text-xs text-zinc-400"></span>
+                </div>
+                <div id="pg-org-cards"></div>
+              </div>
+
+              <div class="space-y-2 pt-3 border-t hairline">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-zinc-500">Investimentos (Pluggy)</h4>
+                  <span id="pg-total" class="text-xs font-semibold tabular-nums"></span>
+                </div>
+                <div id="pg-assets"></div>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="bill-btn" data-view="cards">Importar fatura de cartão (PDF/CSV)</button>
+              <button type="button" class="bill-btn" data-view="settings">Cadastros manuais e ajustes</button>
+            </div>
           </section>
           <!-- VIEW: SETTINGS & PEOPLE -->
           <section id="view-settings" class="hidden space-y-5">
             <div class="card rounded-2xl p-5 space-y-3">
-              <h3 class="font-bold">Cadastrar do zero</h3><p id="manual-list" class="text-sm"></p>
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h3 class="font-bold">Cadastrar do zero</h3>
+                <button type="button" class="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline" data-view="imports">Organizar vínculos Pluggy e origens</button>
+              </div>
+              <div id="manual-list" class="flex flex-wrap gap-2 text-xs"></div>
               <form id="manual-add" class="space-y-2">
                 <label>Tipo <select class="bill-field" name="kind"><option value="account">Conta bancária</option><option value="card">Cartão</option></select></label>
                 <label>Nome <input required maxlength="100" class="bill-field" name="name"></label>
@@ -771,12 +852,18 @@
   </nav>
 
   <dialog id="statement-dialog" aria-labelledby="review-title">
-    <h2 id="review-title">Revisar fatura</h2><p id="review-context"></p>
-    <p id="review-summary"></p><div id="review-rows"></div>
+    <h2 id="review-title">Importação incremental de fatura</h2>
+    <p id="review-context"></p>
+    <div id="review-summary" class="review-banner"></div>
+    <div id="review-rows"></div>
+    <details id="review-ignored-wrap" class="review-ignored-box" hidden>
+      <summary id="review-ignored-title">Compras já existentes (ignoradas)</summary>
+      <div id="review-ignored-list" class="mt-2 space-y-1"></div>
+    </details>
     <p role="alert" id="review-error"></p>
     <div class="review-actions">
       <button type="button" class="bill-btn bill-primary" id="review-save">Confirmar importação</button>
-      <button type="button" class="bill-btn" id="review-cancel">Cancelar</button>
+      <button type="button" class="bill-btn" id="review-cancel">Fechar</button>
     </div>
   </dialog>
   <!-- MODALS -->
@@ -784,10 +871,11 @@
     <div class="absolute inset-0 modal-backdrop" data-close-modal="modal-purchase"></div>
     <div class="relative w-full sm:max-w-lg card rounded-t-3xl sm:rounded-2xl p-5 space-y-3 shadow-2xl max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center">
-        <h3 class="text-sm font-bold">Nova compra no cartão (com rateio)</h3>
+        <h3 id="modal-purchase-title" class="text-sm font-bold">Nova compra no cartão (com rateio)</h3>
         <button type="button" data-close-modal="modal-purchase" class="p-1 text-zinc-400"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       <form id="form-purchase" class="space-y-3">
+        <input id="cp-edit-id" type="hidden" value="" />
         <input id="cp-desc" type="text" required placeholder="Descrição (ex.: Supermercado Zona Sul)" class="w-full h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28] text-sm" />
         <div class="grid grid-cols-2 gap-2">
           <select id="cp-card" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28] text-xs font-semibold"></select>
@@ -795,7 +883,7 @@
         </div>
         <div class="grid grid-cols-3 gap-2">
           <input id="cp-amount" type="number" step="0.01" min="0.01" required placeholder="Total R$" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28] text-sm font-bold" />
-          <input id="cp-inst" type="number" min="1" max="24" value="1" required placeholder="Parcelas" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28] text-sm" />
+          <input id="cp-inst" type="number" min="1" max="99" value="1" required placeholder="Parcelas" class="h-10 px-3 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28] text-sm" />
           <input id="cp-date" type="date" value="2026-11-21" required class="h-10 px-2.5 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28] text-xs" />
         </div>
         <div class="space-y-2 pt-1">
@@ -805,7 +893,7 @@
           </div>
           <div id="cp-splits-box" class="space-y-2"></div>
         </div>
-        <button type="submit" class="w-full h-10 rounded-xl bg-blue-600 text-white text-sm font-semibold">Salvar compra</button>
+        <button id="cp-submit-btn" type="submit" class="w-full h-10 rounded-xl bg-blue-600 text-white text-sm font-semibold">Salvar compra</button>
       </form>
     </div>
   </div>
@@ -992,11 +1080,157 @@
 
       let state = loadState();
       let integration = null;
-      const imported = group => (integration?.positions || []).filter(p=>p.category===group);
-      const includedRemote = () => imported('investments').filter(p=>!p.excluded);
-      const allCards = () => [...new Map([...state.cards,...imported('cards')].map(c=>[c.id,c])).values()];
-      const allAccounts = () => [...state.accounts,...imported('accounts')];
-      const portfolio = () => [...state.investments,...includedRemote()];
+      const imported = (group) => (integration?.positions || []).filter((p) => p.category === group);
+      const getOwnerId = () => state.people.find((p) => p.isOwner)?.id || state.people[0]?.id || 'p_italo';
+
+      function originBadge(origin, ignored = false) {
+        if (ignored) return '<span class="origin-badge origin-ignored">Ignorado</span>';
+        const cls = origin === 'Vinculado' ? 'origin-vinculado' : origin === 'Pluggy' ? 'origin-pluggy' : 'origin-manual';
+        return `<span class="origin-badge ${cls}">${esc(origin)}</span>`;
+      }
+
+      // Resolves Manual + Pluggy accounts without ever duplicating linked balances.
+      function resolvedAccounts() {
+        const pgAccs = imported('accounts');
+        const byTarget = new Map();
+        for (const p of pgAccs) {
+          if (p.linkedTargetId) byTarget.set(p.linkedTargetId, p);
+        }
+        const manualIds = new Set(state.accounts.map((a) => a.id));
+        const list = [];
+        for (const a of state.accounts) {
+          const linked = byTarget.get(a.id);
+          if (linked) {
+            list.push({
+              ...a,
+              balance: Number.isFinite(linked.balance) ? Number(linked.balance) : Number(a.balance) || 0,
+              origin: 'Vinculado',
+              includeInCash: a.includeInCash !== false,
+              excludedByPluggy: Boolean(linked.excluded),
+              linkedPluggyId: linked.id,
+              pluggyName: linked.name,
+            });
+          } else {
+            list.push({
+              ...a,
+              balance: Number(a.balance) || 0,
+              origin: 'Manual',
+              includeInCash: a.includeInCash !== false,
+              excludedByPluggy: false,
+              linkedPluggyId: null,
+              pluggyName: null,
+            });
+          }
+        }
+        for (const p of pgAccs) {
+          if (p.linkedTargetId && manualIds.has(p.linkedTargetId)) continue;
+          list.push({
+            id: p.id,
+            name: p.name,
+            balance: Number(p.balance) || 0,
+            color: p.color || '#2563eb',
+            origin: 'Pluggy',
+            includeInCash: !p.excluded,
+            excludedByPluggy: Boolean(p.excluded),
+            linkedPluggyId: p.id,
+            pluggyName: p.name,
+          });
+        }
+        return list;
+      }
+
+      const allAccounts = () => resolvedAccounts().filter((a) => !a.excludedByPluggy);
+      const cashAccounts = () => resolvedAccounts().filter((a) => !a.excludedByPluggy && a.includeInCash !== false);
+
+      // Resolves Manual + Pluggy cards without duplication, keeping committedLimit strictly secondary.
+      function resolvedCards() {
+        const pgCards = imported('cards');
+        const byTarget = new Map();
+        for (const p of pgCards) {
+          if (p.linkedTargetId) byTarget.set(p.linkedTargetId, p);
+        }
+        const manualIds = new Set(state.cards.map((c) => c.id));
+        const list = [];
+        for (const c of state.cards) {
+          const linked = byTarget.get(c.id);
+          if (linked) {
+            list.push({
+              ...c,
+              limit: Number(linked.limit) > 0 ? Number(linked.limit) : Number(c.limit) || 0,
+              committedLimit: linked.committedLimit ?? linked.bankBalance ?? null,
+              origin: 'Vinculado',
+              excludedByPluggy: Boolean(linked.excluded),
+              linkedPluggyId: linked.id,
+            });
+          } else {
+            list.push({
+              ...c,
+              committedLimit: null,
+              origin: 'Manual',
+              excludedByPluggy: false,
+              linkedPluggyId: null,
+            });
+          }
+        }
+        for (const p of pgCards) {
+          if (p.linkedTargetId && manualIds.has(p.linkedTargetId)) continue;
+          list.push({
+            ...p,
+            committedLimit: p.committedLimit ?? p.bankBalance ?? null,
+            origin: 'Pluggy',
+            excludedByPluggy: Boolean(p.excluded),
+            linkedPluggyId: p.id,
+          });
+        }
+        return list;
+      }
+
+      const allCards = () => resolvedCards().filter((c) => !c.excludedByPluggy);
+
+      function resolvedInvestments() {
+        const pgInv = imported('investments');
+        const byTarget = new Map();
+        for (const p of pgInv) {
+          if (p.linkedTargetId) byTarget.set(p.linkedTargetId, p);
+        }
+        const manualIds = new Set(state.investments.map((i) => i.id));
+        const list = [];
+        for (const inv of state.investments) {
+          const linked = byTarget.get(inv.id);
+          if (linked) {
+            list.push({
+              ...inv,
+              gross: Number.isFinite(linked.gross) ? Number(linked.gross) : Number(inv.gross) || 0,
+              origin: 'Vinculado',
+              excludedByPluggy: Boolean(linked.excluded),
+              linkedPluggyId: linked.id,
+              detail: linked.detail || '',
+            });
+          } else {
+            list.push({
+              ...inv,
+              origin: 'Manual',
+              excludedByPluggy: false,
+              linkedPluggyId: null,
+            });
+          }
+        }
+        for (const p of pgInv) {
+          if (p.linkedTargetId && manualIds.has(p.linkedTargetId)) continue;
+          list.push({
+            ...p,
+            gross: Number(p.gross) || 0,
+            origin: 'Pluggy',
+            excludedByPluggy: Boolean(p.excluded),
+            linkedPluggyId: p.id,
+          });
+        }
+        return list;
+      }
+
+      const includedRemote = () => resolvedInvestments().filter((i) => i.origin === 'Pluggy' && !i.excludedByPluggy);
+      const portfolio = () => resolvedInvestments().filter((i) => !i.excludedByPluggy);
+
       let currentView = 'dashboard';
       let selectedCardId = state.cards[0]?.id || '';
       let selectedPersonId = state.people.find((p) => !p.isOwner)?.id || state.people[0]?.id || 'p_italo';
@@ -1007,11 +1241,19 @@
       let marketData = { quotes: [], news: [], updatedAt: null };
 
       function saveState() {
-        // Preserve the local card reference for manual purchases and PDF statements.
-        const references = new Set(state.cardPurchases.map(p=>p.cardId));
+        // Preserve the local card reference for purchases on unlinked Pluggy cards.
+        const references = new Set(state.cardPurchases.map((p) => p.cardId));
         for (const c of imported('cards')) {
-          if (references.has(c.id) && !state.cards.some(x=>x.id===c.id)) {
-            state.cards.push({id:c.id,name:c.name,institution:c.institution,last4:c.last4,limit:c.limit || 0,closeDay:Number(c.closeDay)||0,dueDay:Number(c.dueDay)||0});
+          if (!c.linkedTargetId && references.has(c.id) && !state.cards.some((x) => x.id === c.id)) {
+            state.cards.push({
+              id: c.id,
+              name: c.name,
+              institution: c.institution || 'Meu Pluggy',
+              last4: c.last4 || '0000',
+              limit: Number(c.limit) || 0,
+              closeDay: Number(c.closeDay) || 1,
+              dueDay: Number(c.dueDay) || 10,
+            });
           }
         }
         try {
@@ -1026,15 +1268,15 @@
       const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       const getMonth = () => document.getElementById('global-month-filter').value;
       const getPerson = (id) => state.people.find((p) => p.id === id) || { id, name: 'Pessoa', role: '' };
-      const getCard = (id) => allCards().find((c) => c.id === id) || { id, name: 'Cartão', last4: '0000' };
-      const getAccount = (id) => allAccounts().find((a) => a.id === id) || { id, name: 'Conta' };
+      const getCard = (id) => resolvedCards().find((c) => c.id === id) || { id, name: 'Cartão', last4: '0000', origin: 'Manual' };
+      const getAccount = (id) => resolvedAccounts().find((a) => a.id === id) || { id, name: 'Conta', origin: 'Manual' };
 
       function showToast(msg) {
         const el = document.getElementById('toast');
         document.getElementById('toast-msg').textContent = msg;
         el.classList.remove('hidden');
         if (toastTimer) clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => el.classList.add('hidden'), 2600);
+        toastTimer = setTimeout(() => el.classList.add('hidden'), 3200);
       }
 
       function copyText(txt) {
@@ -1065,11 +1307,13 @@
       }
 
       function getMonthInstallments(monthKey, includeEarlier = false) {
+        const excludedCards = new Set(resolvedCards().filter((c) => c.excludedByPluggy).map((c) => c.id));
         const rows = [];
         state.cardPurchases.forEach((cp) => {
+          if (!includeEarlier && excludedCards.has(cp.cardId)) return;
           const n = Math.max(1, Number(cp.installments) || 1);
           const confirmed = cp.statementAmounts || {};
-          const firstKnown = cp.id.startsWith('pdf_') ? Object.keys(confirmed).sort()[0] : null;
+          const firstKnown = (cp.id.startsWith('pdf_') || cp.id.startsWith('stmt_')) ? Object.keys(confirmed).sort()[0] : null;
           if (!includeEarlier && firstKnown && monthKey < firstKnown) return;
           const parts = splitCents(cp.totalCents, n);
           for (let i = 0; i < n; i++) {
@@ -1077,7 +1321,7 @@
             const instCents = confirmed[monthKey] ?? parts[i];
             const splits = [];
             let alloc = 0;
-            cp.splits.forEach((sp, idx) => {
+            (cp.splits || []).forEach((sp, idx) => {
               const share = idx === cp.splits.length - 1 ? instCents - alloc : Math.round((instCents * sp.cents) / Math.max(1, cp.totalCents));
               alloc += share;
               splits.push({ personId: sp.personId, cents: share });
@@ -1087,7 +1331,9 @@
               cardId: cp.cardId,
               date: cp.date,
               description: cp.description,
-              category: cp.category,
+              category: cp.category || 'Outros',
+              source: cp.source || (cp.id.startsWith('pgcp_') ? 'pluggy' : (cp.id.startsWith('pdf_') || cp.id.startsWith('stmt_')) ? 'statement' : 'manual'),
+              importKey: cp.importKey || null,
               confirmed: Object.hasOwn(confirmed, monthKey),
               forecast: !Object.hasOwn(confirmed, monthKey) && i > 0,
               installmentNumber: i + 1,
@@ -1142,7 +1388,7 @@
           const el = document.getElementById(`view-${id}`);
           if (el) el.classList.toggle('hidden', id !== v);
         });
-        document.querySelectorAll('.nav-btn, .rail-btn, #mobile-nav button').forEach(button => {
+        document.querySelectorAll('.nav-btn, .rail-btn, #mobile-nav button').forEach((button) => {
           const active = button.dataset.view === v;
           button.classList.toggle('active', active);
           if (active) button.setAttribute('aria-current', 'page');
@@ -1155,11 +1401,11 @@
           investments: 'Investimentos e projeção',
           market: 'Mercado e notícias',
           settings: 'Pessoas e ajustes',
-          imports: 'Importação',
+          imports: 'Importação e origens',
         };
         document.getElementById('header-title').textContent = titles[v] || 'Resumo geral';
         renderAll();
-        if (v === 'imports') loadPluggy().catch(e=>{statusLine.textContent=e.message});
+        if (v === 'imports') loadPluggy().catch((e) => { statusLine.textContent = e.message; renderCashOrganizer(); });
         if (v === 'market' && marketData.quotes.length === 0) fetchMarketData();
       }
 
@@ -1169,9 +1415,10 @@
       function renderSidebarAndRightPanel() {
         const mKey = getMonth();
         const mRows = getMonthInstallments(mKey);
-        const cash = allAccounts().reduce((s, a) => s + a.balance, 0);
+        const ownerId = getOwnerId();
+        const cash = cashAccounts().reduce((s, a) => s + a.balance, 0);
         const totalInv = portfolio().reduce((s, i) => s + i.gross, 0);
-        const ownCard = mRows.reduce((s, r) => s + (r.splits.find((x) => x.personId === 'p_italo')?.cents || 0), 0) / 100;
+        const ownCard = mRows.reduce((s, r) => s + (r.splits.find((x) => x.personId === ownerId)?.cents || 0), 0) / 100;
         const bankExp = state.bankTransactions.filter((t) => t.type === 'expense' && t.date.startsWith(mKey)).reduce((s, t) => s + t.amount, 0);
         const ownTotal = bankExp + ownCard;
         const cap = Number(state.monthlyBudgetCap) || 0;
@@ -1236,9 +1483,12 @@
       function renderDashboard() {
         const mKey = getMonth();
         const mRows = getMonthInstallments(mKey);
-        const cash = allAccounts().reduce((s, a) => s + a.balance, 0);
+        const ownerId = getOwnerId();
+        const activeCash = cashAccounts();
+        const totalAccs = resolvedAccounts().length;
+        const cash = activeCash.reduce((s, a) => s + a.balance, 0);
         const fullBill = mRows.reduce((s, r) => s + r.fullCents, 0);
-        const ownCard = mRows.reduce((s, r) => s + (r.splits.find((x) => x.personId === 'p_italo')?.cents || 0), 0);
+        const ownCard = mRows.reduce((s, r) => s + (r.splits.find((x) => x.personId === ownerId)?.cents || 0), 0);
         const thirdCard = fullBill - ownCard;
         const others = state.people.filter((p) => !p.isOwner);
         const totalRecv = others.reduce((s, p) => s + Math.max(0, computePersonLedger(p.id, mKey).remaining), 0);
@@ -1247,9 +1497,9 @@
         const totalInv = portfolio().reduce((s, i) => s + i.gross, 0);
 
         document.getElementById('kpi-cash').textContent = fmtBRL(cash);
-        document.getElementById('kpi-cash-sub').textContent = `${allAccounts().length} contas · +${fmtBRL(bankInc)} entradas no mês`;
+        document.getElementById('kpi-cash-sub').textContent = `${activeCash.length} de ${totalAccs} conta(s) no saldo · +${fmtBRL(bankInc)} entradas no mês`;
         document.getElementById('kpi-bill').textContent = fmtCents(fullBill);
-        document.getElementById('kpi-bill-sub').textContent = `Seu: ${fmtCents(ownCard)} · Terceiros: ${fmtCents(thirdCard)}`;
+        document.getElementById('kpi-bill-sub').textContent = `Somente ${monthLabel(mKey)} · Seu: ${fmtCents(ownCard)} · Terceiros: ${fmtCents(thirdCard)}`;
         document.getElementById('kpi-recv').textContent = fmtCents(totalRecv);
         document.getElementById('kpi-recv-sub').textContent = `${others.length} pessoas acompanhadas`;
 
@@ -1281,13 +1531,13 @@
           <div style="width:${pctCard}%" class="bg-orange-500 h-full transition-all"></div>
         `;
 
-        // Category vertical bars (Tessera Team Performance style)
+        // Category vertical bars
         const catTotals = {};
         state.bankTransactions.filter((t) => t.type === 'expense' && t.date.startsWith(mKey)).forEach((t) => {
           catTotals[t.category] = (catTotals[t.category] || 0) + t.amount;
         });
         mRows.forEach((r) => {
-          const own = (r.splits.find((x) => x.personId === 'p_italo')?.cents || 0) / 100;
+          const own = (r.splits.find((x) => x.personId === ownerId)?.cents || 0) / 100;
           if (own > 0) catTotals[r.category] = (catTotals[r.category] || 0) + own;
         });
         const topCats = Object.entries(catTotals).sort((a, b) => b[1] - a[1]).slice(0, 4);
@@ -1315,7 +1565,7 @@
           ...mRows.map((r) => ({
             date: r.date,
             title: r.description,
-            sub: `${getCard(r.cardId).name} · ${r.splits.map((s) => getPerson(s.personId).name).join(', ')}`,
+            sub: `${getCard(r.cardId).name} · ${r.splits.map((s) => getPerson(s.personId).name).join(', ') || 'Sem rateio'}`,
             badge: r.splits.length > 1 ? 'Rateio' : r.category,
             badgeClass: r.splits.length > 1 ? 'bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300' : 'bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
             amount: fmtCents(r.fullCents),
@@ -1352,43 +1602,80 @@
       function renderCardsView() {
         const mKey = getMonth();
         const mRows = getMonthInstallments(mKey);
-        if (!allCards().some(c=>c.id===selectedCardId)) selectedCardId = allCards()[0]?.id || '';
-        document.getElementById('cards-selector').innerHTML = allCards().map((c) => {
-          const bill = mRows.filter((r) => r.cardId === c.id).reduce((s, r) => s + r.fullCents, 0);
-          const active = c.id === selectedCardId;
-          return `
-            <button type="button" data-select-card="${esc(c.id)}" class="text-left p-4 rounded-2xl border transition ${active ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/10' : 'card hover:border-zinc-300 dark:hover:border-zinc-700'}">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold">${esc(c.name)}</span>
-                <span class="text-[10px] text-zinc-400">•••• ${esc(c.last4)}</span>
-              </div>
-              <p class="text-lg font-extrabold mt-2 tabular-nums">${fmtCents(bill)}</p>
-              ${c.bankBalance != null ? '<p class="text-xs">Saldo do cartão na Pluggy: ' + fmtBRL(c.bankBalance) + '</p>' : ''}
-              <p class="text-[11px] text-zinc-400 mt-0.5">Fecha dia ${c.closeDay} · Vence dia ${c.dueDay}</p>
-            </button>
-          `;
-        }).join('');
+        const activeCards = allCards();
+        if (!activeCards.some((c) => c.id === selectedCardId)) selectedCardId = activeCards[0]?.id || '';
+        document.getElementById('cards-selector').innerHTML = activeCards.length
+          ? activeCards.map((c) => {
+              // Strictly sum only the purchases/installments belonging to the selected month (YYYY-MM).
+              const bill = mRows.filter((r) => r.cardId === c.id).reduce((s, r) => s + r.fullCents, 0);
+              const active = c.id === selectedCardId;
+              const committed = c.committedLimit != null && Number.isFinite(Number(c.committedLimit))
+                ? Number(c.committedLimit)
+                : null;
+              return `
+                <button type="button" data-select-card="${esc(c.id)}" class="text-left p-4 rounded-2xl border transition ${active ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/10' : 'card hover:border-zinc-300 dark:hover:border-zinc-700'}">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-xs font-bold truncate">${esc(c.name)}</span>
+                    ${originBadge(c.origin)}
+                  </div>
+                  <p class="text-[10px] text-zinc-400 mt-1">Fatura de ${monthLabel(mKey)} · •••• ${esc(c.last4)}</p>
+                  <p class="text-lg font-extrabold mt-0.5 tabular-nums">${fmtCents(bill)}</p>
+                  <p class="text-[11px] text-zinc-400 mt-0.5">Fecha dia ${c.closeDay} · Vence dia ${c.dueDay}</p>
+                  ${committed != null ? `<p class="text-[10px] text-zinc-400 mt-1">Limite comprometido: ${fmtBRL(committed)}${c.limit ? ' / ' + fmtBRL(c.limit) : ''}</p>` : ''}
+                </button>
+              `;
+            }).join('')
+          : '<p class="col-span-3 text-xs text-zinc-400 py-3">Nenhum cartão ativo. Cadastre um cartão em Ajustes ou ative no Meu Pluggy.</p>';
 
         const card = getCard(selectedCardId);
         const cardItems = mRows.filter((r) => r.cardId === selectedCardId);
         const cardTotal = cardItems.reduce((s, r) => s + r.fullCents, 0);
-        document.getElementById('card-detail-title').textContent = `${card.name} · ${cardItems.length} lançamento(s)`;
+        document.getElementById('card-detail-title').textContent = `${card.name} · ${monthLabel(mKey)} · ${cardItems.length} lançamento(s)`;
+        const subEl = document.getElementById('card-detail-sub');
+        if (subEl) {
+          subEl.textContent = card.committedLimit != null
+            ? `Apenas gastos de ${monthLabel(mKey)} (Limite comprometido total: ${fmtBRL(card.committedLimit)})`
+            : `Apenas compras e parcelas da fatura de ${monthLabel(mKey)}`;
+        }
         document.getElementById('card-detail-total').textContent = fmtCents(cardTotal);
         document.getElementById('card-items-list').innerHTML = cardItems.length
-          ? cardItems.map((r) => `
+          ? cardItems.map((r) => {
+              const sourceTag = r.source === 'pluggy'
+                ? '<span class="origin-badge origin-pluggy">Pluggy</span>'
+                : r.source === 'statement'
+                  ? '<span class="origin-badge origin-vinculado">Fatura</span>'
+                  : '';
+              return `
               <div class="bill-row">
-                <div><strong>${esc(r.description)}</strong><small>${fmtDate(r.date)} · ${r.installmentsTotal > 1 ? 'Parcela ' + r.installmentNumber + '/' + r.installmentsTotal : 'À vista'}${r.confirmed ? ' · Conferida no PDF' : r.forecast ? ' · Prevista' : ''}</small></div>
-                <div class="text-right"><strong>${fmtCents(r.fullCents)}</strong>
-                  <button type="button" data-del-purchase="${esc(r.purchaseId)}" class="p-1 text-zinc-500" aria-label="Excluir compra"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
-                <label class="bill-owner">Responsável
-                  <select class="bill-field" data-bill-owner="${esc(r.purchaseId)}">
-                    ${r.splits.length !== 1 ? '<option value="">Rateio atual</option>' : ''}
-                    ${personOptions(r.splits.length === 1 ? r.splits[0].personId : '')}
-                  </select>
-                  ${r.splits.length > 1 ? '<small>' + r.splits.map(sp => esc(getPerson(sp.personId).name) + ' ' + fmtCents(sp.cents)).join(' · ') + '</small>' : ''}
-                </label>
+                <div>
+                  <div class="flex items-center flex-wrap gap-1.5">
+                    <strong>${esc(r.description)}</strong>
+                    ${sourceTag}
+                  </div>
+                  <small>${fmtDate(r.date)} · ${r.installmentsTotal > 1 ? 'Parcela ' + r.installmentNumber + '/' + r.installmentsTotal : 'À vista'}${r.confirmed ? ' · Fatura conferida' : r.forecast ? ' · Parcela prevista' : ''}</small>
+                </div>
+                <div class="text-right">
+                  <strong>${fmtCents(r.fullCents)}</strong>
+                  <button type="button" data-del-purchase="${esc(r.purchaseId)}" class="p-1 text-zinc-500 hover:text-rose-500" aria-label="Excluir compra"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+                <div class="bill-actions-bar">
+                  <label class="flex items-center gap-1.5">Categoria
+                    <select class="bill-field" data-bill-category="${esc(r.purchaseId)}">
+                      ${CATEGORIES.map((cat) => `<option value="${esc(cat)}" ${cat === r.category ? 'selected' : ''}>${esc(cat)}</option>`).join('')}
+                    </select>
+                  </label>
+                  <label class="flex items-center gap-1.5">Responsável
+                    <select class="bill-field" data-bill-owner="${esc(r.purchaseId)}">
+                      ${r.splits.length !== 1 ? '<option value="">Rateio dividido</option>' : ''}
+                      ${personOptions(r.splits.length === 1 ? r.splits[0].personId : '')}
+                    </select>
+                  </label>
+                  <button type="button" class="bill-mini-btn" data-edit-purchase="${esc(r.purchaseId)}">Dividir / Ratear</button>
+                  ${r.splits.length > 1 ? '<small class="w-full">' + r.splits.map((sp) => esc(getPerson(sp.personId).name) + ' ' + fmtCents(sp.cents)).join(' · ') + '</small>' : ''}
+                </div>
               </div>
-            `).join('')
+            `;
+            }).join('')
           : '<p class="py-6 text-xs text-zinc-400 text-center">Nenhuma compra neste cartão neste mês.</p>';
 
         renderForecast(selectedCardId, mKey);
@@ -1435,18 +1722,25 @@
           .sort((a, b) => b.date.localeCompare(a.date));
 
         document.getElementById('bank-tx-list').innerHTML = txs.length
-          ? txs.map((t) => `
+          ? txs.map((t) => {
+              const acc = getAccount(t.accountId);
+              const isPluggy = t.source === 'pluggy' || String(t.id || '').startsWith('pgtx_');
+              return `
               <div class="py-2.5 flex items-center justify-between gap-3">
                 <div class="min-w-0">
-                  <p class="text-xs font-semibold truncate">${esc(t.description)}</p>
-                  <p class="text-[11px] text-zinc-400">${fmtDate(t.date)} · ${esc(t.category)} · ${esc(getAccount(t.accountId).name)}</p>
+                  <div class="flex items-center gap-1.5">
+                    <p class="text-xs font-semibold truncate">${esc(t.description)}</p>
+                    ${isPluggy ? '<span class="origin-badge origin-pluggy">Pluggy</span>' : ''}
+                  </div>
+                  <p class="text-[11px] text-zinc-400">${fmtDate(t.date)} · ${esc(t.category)} · ${esc(acc.name)}</p>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                   <span class="text-xs font-bold tabular-nums ${t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}">${t.type === 'income' ? '+' : '-'}${fmtBRL(t.amount)}</span>
                   <button type="button" data-del-btx="${esc(t.id)}" class="p-1 text-zinc-400 hover:text-rose-500"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                 </div>
               </div>
-            `).join('')
+            `;
+            }).join('')
           : '<p class="py-6 text-xs text-zinc-400 text-center">Nenhuma movimentação neste mês.</p>';
       }
 
@@ -1548,19 +1842,21 @@
       }
 
       function renderInvestmentsView() {
-        const totalGross = portfolio().reduce((s, i) => s + i.gross, 0);
-        const enriched = state.investments.map((i) => ({ ...i, m: computeInvMetrics(i) }));
+        const activePortfolio = portfolio();
+        const totalGross = activePortfolio.reduce((s, i) => s + i.gross, 0);
+        const manualOrLinked = activePortfolio.filter((i) => i.origin !== 'Pluggy');
+        const enriched = manualOrLinked.map((i) => ({ ...i, m: computeInvMetrics(i) }));
         const totalMonthNet = enriched.reduce((s, x) => s + x.m.monthNet, 0);
         const totalYearNet = enriched.reduce((s, x) => s + x.m.yearNet, 0);
-        const projected = enriched.reduce((s,x)=>s+x.gross,0);
-        const weightedNetAnn = projected > 0 ? totalYearNet / projected * 100 : 0;
+        const projected = enriched.reduce((s, x) => s + x.gross, 0);
+        const weightedNetAnn = projected > 0 ? (totalYearNet / projected) * 100 : 0;
         const ipca = Number(state.marketRates.ipca) || 4.5;
         const weightedRealAnn = projected ? ((1 + weightedNetAnn / 100) / (1 + ipca / 100) - 1) * 100 : 0;
-        const taxFreeTotal = state.investments.filter((i) => i.taxFree).reduce((s, i) => s + i.gross, 0);
+        const taxFreeTotal = manualOrLinked.filter((i) => i.taxFree).reduce((s, i) => s + i.gross, 0);
         const taxFreePct = totalGross > 0 ? Math.round((taxFreeTotal / totalGross) * 100) : 0;
 
         document.getElementById('inv-kpi-total').textContent = fmtBRL(totalGross);
-        document.getElementById('inv-kpi-count').textContent = `${portfolio().length} ativo(s) cadastrado(s)`;
+        document.getElementById('inv-kpi-count').textContent = `${activePortfolio.length} ativo(s) contabilizado(s)`;
         document.getElementById('inv-kpi-month').textContent = `+${fmtBRL(totalMonthNet)}`;
         document.getElementById('inv-kpi-year').textContent = `+${fmtBRL(totalYearNet)}`;
         document.getElementById('inv-kpi-rate').textContent = `Ativos com taxa cadastrada · ${weightedNetAnn.toFixed(2)}% a.a.`;
@@ -1568,7 +1864,7 @@
         document.getElementById('inv-kpi-taxfree').textContent = `${taxFreePct}% isento de IR`;
 
         // Smart automatic insights
-        const topAsset = [...portfolio()].sort((a, b) => b.gross - a.gross)[0];
+        const topAsset = [...activePortfolio].sort((a, b) => b.gross - a.gross)[0];
         const topConc = topAsset && totalGross > 0 ? Math.round((topAsset.gross / totalGross) * 100) : 0;
         const monthlyCap = Number(state.monthlyBudgetCap) || 0;
         const reserveMonths = (totalGross / Math.max(1, monthlyCap)).toFixed(1);
@@ -1576,7 +1872,7 @@
         const irDef = Number(state.marketRates.irRate) || 0.175;
         const lciEquivCdb = (93 / (1 - irDef)).toFixed(1);
         const monthlyRate = weightedNetAnn / 1200;
-        const extra1k10y = monthlyRate ? 1000 * Math.expm1(120 * Math.log1p(monthlyRate)) / monthlyRate : 120000;
+        const extra1k10y = monthlyRate ? (1000 * Math.expm1(120 * Math.log1p(monthlyRate))) / monthlyRate : 120000;
 
         const insights = [
           {
@@ -1606,15 +1902,16 @@
 
         // Allocation summary
         const byType = { CDI: 0, IPCA: 0, PRE: 0 };
-        state.investments.forEach((i) => { byType[i.rateType] = (byType[i.rateType] || 0) + i.gross; });
+        manualOrLinked.forEach((i) => { byType[i.rateType] = (byType[i.rateType] || 0) + i.gross; });
         document.getElementById('inv-alloc-summary').textContent =
           `CDI ${totalGross ? Math.round((byType.CDI / totalGross) * 100) : 0}% · IPCA ${totalGross ? Math.round((byType.IPCA / totalGross) * 100) : 0}% · Pré ${totalGross ? Math.round((byType.PRE / totalGross) * 100) : 0}%`;
 
         document.getElementById('inv-assets-list').innerHTML = enriched.map((x) => `
           <div class="py-3 flex flex-wrap items-center justify-between gap-3">
             <div class="min-w-0">
-              <div class="flex items-center gap-2">
+              <div class="flex items-center flex-wrap gap-2">
                 <p class="text-xs font-bold truncate">${esc(x.name)}</p>
+                ${originBadge(x.origin)}
                 <span class="px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${x.taxFree ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'}">${x.taxFree ? 'Isento IR' : `IR ${(x.m.ir * 100).toFixed(1)}%`}</span>
               </div>
               <p class="text-[11px] text-zinc-400 mt-0.5">${x.rateType === 'CDI' ? `${x.rateVal}% CDI` : x.rateType === 'IPCA' ? `IPCA + ${x.rateVal}%` : `Pré ${x.rateVal}% a.a.`} · Líq. ${x.m.netAnn.toFixed(2)}% a.a. · Real +${x.m.realAnn.toFixed(2)}%</p>
@@ -1630,8 +1927,11 @@
         `).join('');
 
         const remote = includedRemote();
-        document.getElementById('inv-assets-list').insertAdjacentHTML('beforeend', remote.map(a=>`<div class="pg-option pg-invest"><span>${esc(a.name)}<small>Meu Pluggy · ${esc(a.detail)}</small></span><b>${fmtBRL(a.gross)}</b></div>`).join(''));
-        if (remote.length) document.getElementById('inv-alloc-summary').textContent += ' · Meu Pluggy ' + fmtBRL(remote.reduce((s,a)=>s+a.gross,0));
+        document.getElementById('inv-assets-list').insertAdjacentHTML(
+          'beforeend',
+          remote.map((a) => `<div class="pg-option pg-invest"><span class="flex items-center gap-2 flex-wrap">${esc(a.name)} ${originBadge('Pluggy')}<small class="w-full">${esc(a.detail || 'Meu Pluggy')}</small></span><b>${fmtBRL(a.gross)}</b></div>`).join(''),
+        );
+        if (remote.length) document.getElementById('inv-alloc-summary').textContent += ' · Pluggy ' + fmtBRL(remote.reduce((s, a) => s + a.gross, 0));
         runInvestmentCalculator();
       }
 
@@ -1738,7 +2038,13 @@
 
       function renderSettingsView() {
         document.getElementById('btn-new-person').textContent = state.people.length ? '+ Nova pessoa' : 'Cadastrar titular';
-        document.getElementById('manual-list').textContent = [...allAccounts(), ...allCards()].map(x=>x.name).join(' · ') || 'Nenhuma conta ou cartão cadastrado.';
+        const items = [
+          ...resolvedAccounts().map((a) => ({ label: a.name, origin: a.origin, ignored: a.excludedByPluggy, kind: 'Conta' })),
+          ...resolvedCards().map((c) => ({ label: c.name, origin: c.origin, ignored: c.excludedByPluggy, kind: 'Cartão' })),
+        ];
+        document.getElementById('manual-list').innerHTML = items.length
+          ? items.map((x) => `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border hairline bg-zinc-50 dark:bg-[#1B1E28]"><span>${esc(x.kind)}: <b>${esc(x.label)}</b></span>${originBadge(x.origin, x.ignored)}</span>`).join('')
+          : '<span class="text-zinc-400">Nenhuma conta ou cartão cadastrado.</span>';
         document.getElementById('settings-people-list').innerHTML = state.people.map((p) => `
           <div class="py-2.5 flex items-center justify-between">
             <div><p class="text-xs font-semibold">${esc(p.name)}</p><p class="text-[11px] text-zinc-400">${esc(p.role)}</p></div>
@@ -1760,7 +2066,7 @@
         document.getElementById('set-person').innerHTML = state.people.filter((p) => !p.isOwner).map((p) => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
       }
 
-      function addSplitRow(defaultPersonId = 'p_italo', defaultVal = '') {
+      function addSplitRow(defaultPersonId = getOwnerId(), defaultVal = '') {
         const box = document.getElementById('cp-splits-box');
         const row = document.createElement('div');
         row.className = 'flex items-center gap-2 split-row';
@@ -1775,14 +2081,47 @@
         box.appendChild(row);
       }
 
-      function openPurchaseModal() {
-        if (!allCards().length || !state.people.length) { setView('settings'); showToast('Cadastre o titular e um cartão para lançar compras.'); return; }
+      function openPurchaseModal(editPurchaseId = null) {
+        if (!allCards().length || !state.people.length) {
+          setView('settings');
+          showToast('Cadastre o titular e um cartão para lançar compras.');
+          return;
+        }
         populateSelects();
         document.getElementById('form-purchase').reset();
-        if (currentView === 'cards') document.getElementById('cp-card').value = selectedCardId;
-        document.getElementById('cp-date').value = `${getMonth()}-21`;
-        document.getElementById('cp-splits-box').innerHTML = '';
-        addSplitRow('p_italo', '');
+        const editIdInput = document.getElementById('cp-edit-id');
+        const titleEl = document.getElementById('modal-purchase-title');
+        const submitBtn = document.getElementById('cp-submit-btn');
+        const splitsBox = document.getElementById('cp-splits-box');
+        splitsBox.innerHTML = '';
+
+        const existing = typeof editPurchaseId === 'string'
+          ? state.cardPurchases.find((p) => p.id === editPurchaseId)
+          : null;
+
+        if (existing) {
+          editIdInput.value = existing.id;
+          titleEl.textContent = 'Editar compra e dividir rateio';
+          submitBtn.textContent = 'Salvar alterações';
+          document.getElementById('cp-desc').value = existing.description;
+          document.getElementById('cp-card').value = existing.cardId;
+          document.getElementById('cp-cat').value = CATEGORIES.includes(existing.category) ? existing.category : 'Outros';
+          document.getElementById('cp-amount').value = ((Number(existing.totalCents) || 0) / 100).toFixed(2);
+          document.getElementById('cp-inst').value = String(Math.max(1, Number(existing.installments) || 1));
+          document.getElementById('cp-date').value = existing.date;
+          if (existing.splits && existing.splits.length) {
+            existing.splits.forEach((sp) => addSplitRow(sp.personId, (sp.cents / 100).toFixed(2)));
+          } else {
+            addSplitRow(getOwnerId(), ((Number(existing.totalCents) || 0) / 100).toFixed(2));
+          }
+        } else {
+          editIdInput.value = '';
+          titleEl.textContent = 'Nova compra no cartão (com rateio)';
+          submitBtn.textContent = 'Salvar compra';
+          if (currentView === 'cards') document.getElementById('cp-card').value = selectedCardId;
+          document.getElementById('cp-date').value = `${getMonth()}-21`;
+          addSplitRow(getOwnerId(), '');
+        }
         openModal('modal-purchase');
       }
 
@@ -1795,42 +2134,57 @@
         if (currentView === 'investments') renderInvestmentsView();
         if (currentView === 'market') renderMarketView();
         if (currentView === 'settings') renderSettingsView();
+        if (currentView === 'imports') {
+          renderCashOrganizer();
+          renderPluggyOrganizer();
+        }
         if (window.lucide) lucide.createIcons();
       }
 
       function personOptions(selected) {
-        return state.people.map(person => `<option value="${esc(person.id)}" ${person.id === selected ? 'selected' : ''}>${esc(person.name)}</option>`).join('');
+        return state.people.map((person) => `<option value="${esc(person.id)}" ${person.id === selected ? 'selected' : ''}>${esc(person.name)}</option>`).join('');
       }
 
-      document.getElementById('card-items-list').onchange = event => {
-        const select = event.target.closest('[data-bill-owner]');
-        if (!select || !select.value) return;
-        const purchase = state.cardPurchases.find(p => p.id === select.dataset.billOwner);
-        if (!purchase) return;
-        purchase.splits = [{personId: select.value, cents: purchase.totalCents}];
-        saveState();
-        renderAll();
-        showToast(purchase.installments > 1 ? 'Responsável atualizado em todas as parcelas.' : 'Responsável atualizado.');
+      document.getElementById('card-items-list').onchange = (event) => {
+        const ownerSel = event.target.closest('[data-bill-owner]');
+        if (ownerSel && ownerSel.value) {
+          const purchase = state.cardPurchases.find((p) => p.id === ownerSel.dataset.billOwner);
+          if (!purchase) return;
+          purchase.splits = [{ personId: ownerSel.value, cents: purchase.totalCents }];
+          saveState();
+          renderAll();
+          showToast(purchase.installments > 1 ? 'Responsável atualizado em todas as parcelas.' : 'Responsável atualizado.');
+          return;
+        }
+        const catSel = event.target.closest('[data-bill-category]');
+        if (catSel && catSel.value) {
+          const purchase = state.cardPurchases.find((p) => p.id === catSel.dataset.billCategory);
+          if (!purchase) return;
+          purchase.category = catSel.value;
+          saveState();
+          renderAll();
+          showToast('Categoria atualizada.');
+        }
       };
       document.getElementById('bill-new-person').onclick = () => openModal('modal-person');
 
       function renderForecast(cardId, currentMonth) {
-        const card = state.cardPurchases.filter(p => p.cardId === cardId && p.installments > 1);
-        const end = card.map(p => addMonths(p.startMonth, p.installments - 1)).sort().pop();
+        const card = state.cardPurchases.filter((p) => p.cardId === cardId && p.installments > 1);
+        const end = card.map((p) => addMonths(p.startMonth, p.installments - 1)).sort().pop();
         const list = [];
         for (let month = addMonths(currentMonth, 1); end && month <= end; month = addMonths(month, 1)) {
-          const rows = getMonthInstallments(month).filter(r => r.cardId === cardId && r.installmentsTotal > 1);
+          const rows = getMonthInstallments(month).filter((r) => r.cardId === cardId && r.installmentsTotal > 1);
           if (!rows.length) continue;
           const byPerson = new Map();
           for (const row of rows) for (const sp of row.splits) {
             byPerson.set(sp.personId, (byPerson.get(sp.personId) || 0) + sp.cents);
           }
           const detail = [...byPerson].map(([id, cents]) => esc(getPerson(id).name) + ' ' + fmtCents(cents)).join(' · ');
-          list.push(`<li><div><b>${monthLabel(month)}</b><small>${detail}</small></div><button class="bill-btn" data-bill-month="${month}" title="Abrir fatura">${fmtCents(rows.reduce((sum,r) => sum + r.fullCents, 0))}</button></li>`);
+          list.push(`<li><div><b>${monthLabel(month)}</b><small>${detail}</small></div><button class="bill-btn" data-bill-month="${month}" title="Abrir fatura">${fmtCents(rows.reduce((sum, r) => sum + r.fullCents, 0))}</button></li>`);
         }
         document.querySelector('#card-forecast ul').innerHTML = list.join('') || '<li>Nenhuma parcela futura neste cartão.</li>';
       }
-      document.getElementById('card-forecast').onclick = event => {
+      document.getElementById('card-forecast').onclick = (event) => {
         const button = event.target.closest('[data-bill-month]');
         if (button) goToMonth(button.dataset.billMonth);
       };
@@ -1839,205 +2193,542 @@
       const statusLine = document.getElementById('pg-status');
       let preferencesDirty = false;
       pgForm.oninput = () => { preferencesDirty = true; };
-      const pgGroups = ['accounts','cards','investments','auto'];
+      const pgGroups = ['accounts', 'cards', 'investments', 'auto', 'syncTransactions'];
       async function pgApi(action, body) {
-        const options = body === undefined ? {} : {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)};
+        const options = body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
         const res = await fetch('/api/pluggy/' + action, options);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Falha ao acessar a integração.');
         return data;
       }
-      function pgSummary() {
-        const assets = imported('investments');
-        document.getElementById('pg-assets').innerHTML = assets.map(a => `
-          <label class="pg-option pg-invest"><input type="checkbox" data-position="${esc(a.id)}" ${a.excluded ? '' : 'checked'}>
-          <span>${esc(a.name)}<small>${esc(a.detail)}</small></span><b>${fmtBRL(a.gross)}</b></label>`).join('') ||
-          '<p class="text-sm py-3">Nenhuma aplicação importada.</p>';
-        document.getElementById('pg-total').textContent = 'Contabilizado: ' + fmtBRL(includedRemote().reduce((s,i)=>s+i.gross,0));
+
+      function renderCashOrganizer() {
+        const box = document.getElementById('accounts-cash-organizer');
+        const totalEl = document.getElementById('cash-organizer-total');
+        if (!box || !totalEl) return;
+        const accs = resolvedAccounts();
+        const totalCash = cashAccounts().reduce((s, a) => s + a.balance, 0);
+        totalEl.textContent = 'Disponível: ' + fmtBRL(totalCash);
+        box.innerHTML = accs.length
+          ? accs.map((a) => {
+              const checked = !a.excludedByPluggy && a.includeInCash !== false;
+              const disabledNote = a.excludedByPluggy ? ' · Item Pluggy ignorado' : '';
+              return `
+                <div class="py-3 flex flex-wrap items-center justify-between gap-3 ${!checked ? 'opacity-65' : ''}">
+                  <label class="flex items-center gap-3 min-w-0 cursor-pointer">
+                    <input type="checkbox" class="w-4 h-4 accent-blue-600"
+                      data-cash-account="${esc(a.id)}"
+                      data-cash-origin="${esc(a.origin)}"
+                      data-cash-pluggy="${esc(a.linkedPluggyId || '')}"
+                      ${checked ? 'checked' : ''}
+                      ${a.origin === 'Vinculado' && a.excludedByPluggy ? 'disabled' : ''}>
+                    <div class="min-w-0">
+                      <div class="flex items-center flex-wrap gap-2">
+                        <span class="text-xs font-bold truncate">${esc(a.name)}</span>
+                        ${originBadge(a.origin, a.excludedByPluggy)}
+                      </div>
+                      <p class="text-[11px] text-zinc-400">
+                        ${a.origin === 'Vinculado' ? 'Saldo sincronizado via Pluggy (' + esc(a.pluggyName || '') + ')' : a.origin === 'Pluggy' ? 'Recebido do Meu Pluggy' : 'Cadastrado manualmente'}${disabledNote}
+                      </p>
+                    </div>
+                  </label>
+                  <div class="text-right shrink-0">
+                    <p class="text-xs font-extrabold tabular-nums">${fmtBRL(a.balance)}</p>
+                    <p class="text-[10px] text-zinc-400">${checked ? 'Entra no Dinheiro disponível' : 'Fora do Dinheiro disponível'}</p>
+                  </div>
+                </div>
+              `;
+            }).join('')
+          : '<p class="py-4 text-xs text-zinc-400">Nenhuma conta cadastrada ou sincronizada ainda.</p>';
       }
+
+      function renderPluggyCategoryRows(containerId, items, manualTargets, valueFn, subtitleFn, emptyText) {
+        const el = document.getElementById(containerId);
+        if (!el) return;
+        if (!items.length) {
+          el.innerHTML = `<p class="text-xs text-zinc-400 py-2">${esc(emptyText)}</p>`;
+          return;
+        }
+        el.innerHTML = items.map((p) => {
+          const linkedTarget = p.linkedTargetId ? manualTargets.find((m) => m.id === p.linkedTargetId) : null;
+          const origin = linkedTarget ? 'Vinculado' : 'Pluggy';
+          return `
+            <div class="pg-org-row ${p.excluded ? 'is-ignored' : ''}">
+              <div class="min-w-0">
+                <div class="flex items-center flex-wrap gap-2">
+                  <label class="inline-flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" class="w-4 h-4 accent-blue-600" data-position="${esc(p.id)}" ${p.excluded ? '' : 'checked'}>
+                    <span class="text-xs font-bold">${esc(p.name)}</span>
+                  </label>
+                  ${originBadge(origin, p.excluded)}
+                </div>
+                <p class="text-[11px] text-zinc-400 mt-0.5">${esc(subtitleFn(p, linkedTarget))}</p>
+              </div>
+              <div class="text-right shrink-0">
+                <p class="text-xs font-extrabold tabular-nums">${esc(valueFn(p))}</p>
+                <p class="text-[10px] text-zinc-400">${p.excluded ? 'Ignorado nos KPIs' : 'Ativo no cálculo'}</p>
+              </div>
+              <div class="pg-org-controls">
+                <label class="text-[11px] text-zinc-500 flex items-center gap-2">
+                  <span>Vincular/substituir manual:</span>
+                  <select class="bill-field" data-pg-link="${esc(p.id)}">
+                    <option value="">Item separado (Pluggy)</option>
+                    ${manualTargets.map((m) => `<option value="${esc(m.id)}" ${p.linkedTargetId === m.id ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}
+                  </select>
+                </label>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function renderPluggyOrganizer() {
+        const pgAccs = imported('accounts');
+        const pgCards = imported('cards');
+        const pgInvs = imported('investments');
+
+        const activeAccSum = pgAccs.filter((a) => !a.excluded).reduce((s, a) => s + (Number(a.balance) || 0), 0);
+        const accSumEl = document.getElementById('pg-org-accounts-summary');
+        if (accSumEl) accSumEl.textContent = pgAccs.length ? 'Ativo no Pluggy: ' + fmtBRL(activeAccSum) : '';
+
+        const cardSumEl = document.getElementById('pg-org-cards-summary');
+        if (cardSumEl) cardSumEl.textContent = pgCards.length ? `${pgCards.filter((c) => !c.excluded).length} de ${pgCards.length} ativo(s)` : '';
+
+        renderPluggyCategoryRows(
+          'pg-org-accounts',
+          pgAccs,
+          state.accounts,
+          (a) => fmtBRL(a.balance),
+          (a, linked) => linked ? `Substitui o saldo da conta manual "${linked.name}" (sem duplicar)` : `Conta bancária Pluggy · ${a.id.slice(-8)}`,
+          'Nenhuma conta bancária recebida do Meu Pluggy.',
+        );
+
+        renderPluggyCategoryRows(
+          'pg-org-cards',
+          pgCards,
+          state.cards,
+          (c) => c.committedLimit != null ? 'Limite compr.: ' + fmtBRL(c.committedLimit) : 'Sem saldo',
+          (c, linked) => [
+            linked ? `Vinculado ao cartão manual "${linked.name}"` : `Final •••• ${c.last4 || '—'} · ${c.institution || 'Meu Pluggy'}`,
+            'Fatura mensal calculada pelas compras do mês',
+          ].join(' · '),
+          'Nenhum cartão recebido do Meu Pluggy.',
+        );
+
+        renderPluggyCategoryRows(
+          'pg-assets',
+          pgInvs,
+          state.investments,
+          (i) => fmtBRL(i.gross),
+          (i, linked) => linked ? `Substitui saldo de "${linked.name}" · ${i.detail || ''}` : (i.detail || 'Investimento Meu Pluggy'),
+          'Nenhuma aplicação importada.',
+        );
+
+        const totalInvPg = pgInvs.filter((i) => !i.excluded).reduce((s, i) => s + (Number(i.gross) || 0), 0);
+        const pgTotalEl = document.getElementById('pg-total');
+        if (pgTotalEl) pgTotalEl.textContent = 'Ativo no Pluggy: ' + fmtBRL(totalInvPg);
+      }
+
       function renderImport() {
-        if (!integration) return;
-        const {ready, protectedApp, prefs, last_sync, status} = integration;
+        renderCashOrganizer();
+        if (!integration) {
+          renderPluggyOrganizer();
+          return;
+        }
+        const { ready, protectedApp, prefs, last_sync, status, syncedTxCounts } = integration;
         const saved = localStorage.getItem('pg-draft-v1');
-        const config = saved ? {...prefs,...JSON.parse(saved)} : prefs;
+        const config = saved ? { ...prefs, ...JSON.parse(saved) } : prefs;
         if (!preferencesDirty) {
-          for (const key of pgGroups) pgForm.elements.namedItem(key).checked = config[key];
-          pgForm.elements.itemIds.value = prefs.itemIds.join('\n');
+          for (const key of pgGroups) {
+            const field = pgForm.elements.namedItem(key);
+            if (field) field.checked = Boolean(config[key]);
+          }
+          if (pgForm.elements.txDays) pgForm.elements.txDays.value = String(config.txDays || 90);
+          pgForm.elements.itemIds.value = (prefs.itemIds || []).join('\n');
         }
         pgForm.elements.itemIds.disabled = !protectedApp;
         document.getElementById('pg-sync').disabled = !ready;
         document.getElementById('pg-worker-settings').hidden = ready;
-        document.getElementById('pg-setup').textContent = ready ? 'Conecte seus bancos no Meu Pluggy e informe os IDs da aplicação.' :
-          'Para ativar a conexão, configure os secrets APP_PASSWORD, PLUGGY_CLIENT_ID e PLUGGY_CLIENT_SECRET no Worker financas-pessoais. Depois entre no app e salve os IDs dos bancos.';
-        document.getElementById('pg-history').textContent = status || (last_sync ? 'Última atualização: ' + new Date(last_sync).toLocaleString('pt-BR') : 'Nenhuma sincronização realizada.');
-        pgSummary();
+        document.getElementById('pg-setup').textContent = ready
+          ? 'Conecte seus bancos no Meu Pluggy e informe os IDs da aplicação.'
+          : 'Para ativar a conexão, configure os secrets APP_PASSWORD, PLUGGY_CLIENT_ID e PLUGGY_CLIENT_SECRET no Worker financas-pessoais. Depois entre no app e salve os IDs dos bancos.';
+        const txInfo = syncedTxCounts
+          ? ` · Transações sincronizadas: ${syncedTxCounts.bank || 0} conta(s) / ${syncedTxCounts.card || 0} cartão(ões)`
+          : '';
+        document.getElementById('pg-history').textContent = status || (last_sync ? 'Última atualização: ' + new Date(last_sync).toLocaleString('pt-BR') + txInfo : 'Nenhuma sincronização realizada.');
+        renderPluggyOrganizer();
       }
+
       async function loadPluggy() {
         integration = await pgApi('status');
-        if (!allCards().some(c=>c.id===selectedCardId)) selectedCardId=allCards()[0]?.id || '';
-        renderImport(); populateSelects(); renderAll();
+        if (!allCards().some((c) => c.id === selectedCardId)) selectedCardId = allCards()[0]?.id || '';
+        renderImport();
+        populateSelects();
+        renderAll();
       }
+
       async function savePluggy() {
-        const prefs = Object.fromEntries(pgGroups.map(k=>[k,pgForm.elements.namedItem(k).checked]));
+        const prefs = Object.fromEntries(pgGroups.map((k) => [k, Boolean(pgForm.elements.namedItem(k)?.checked)]));
+        prefs.txDays = Number(pgForm.elements.txDays?.value) || 90;
         if (!integration?.protectedApp) {
-          localStorage.setItem('pg-draft-v1',JSON.stringify(prefs));
-          preferencesDirty = false; return false;
+          localStorage.setItem('pg-draft-v1', JSON.stringify(prefs));
+          preferencesDirty = false;
+          return false;
         }
         prefs.itemIds = pgForm.elements.itemIds.value.trim().split(/[\s,;]+/).filter(Boolean);
-        await pgApi('preferences',prefs);
-        localStorage.removeItem('pg-draft-v1'); preferencesDirty=false;
+        await pgApi('preferences', prefs);
+        localStorage.removeItem('pg-draft-v1');
+        preferencesDirty = false;
         return true;
       }
-      pgForm.onsubmit = async event => {
+
+      pgForm.onsubmit = async (event) => {
         event.preventDefault();
-        try { const saved = await savePluggy(); await loadPluggy(); statusLine.textContent = saved ? 'Preferências salvas.' : 'Preferências salvas neste navegador. Ative a conexão para sincronizar.'; }
-        catch(e){statusLine.textContent=e.message;}
+        try {
+          const saved = await savePluggy();
+          await loadPluggy();
+          statusLine.textContent = saved ? 'Preferências salvas.' : 'Preferências salvas neste navegador. Ative a conexão para sincronizar.';
+        } catch (e) {
+          statusLine.textContent = e.message;
+        }
       };
-      document.getElementById('pg-sync').onclick = async event => {
-        event.target.disabled = true; statusLine.textContent='Consultando a Pluggy…';
+
+      document.getElementById('pg-sync').onclick = async (event) => {
+        event.target.disabled = true;
+        statusLine.textContent = 'Consultando saldos e transações na Pluggy…';
         try {
           if (preferencesDirty || localStorage.getItem('pg-draft-v1')) await savePluggy();
-          await pgApi('sync',{}); await loadPluggy();
-          statusLine.textContent='Dados atualizados.';
-        } catch(e) {statusLine.textContent=e.message;} finally {event.target.disabled=!integration?.ready;}
-      };
-      document.getElementById('pg-assets').onchange = async event => {
-        const el=event.target;
-        if (!el.dataset.position) return;
-        el.disabled=true;
-        try {
-          await pgApi('inclusion',{id:el.dataset.position,included:el.checked});
+          const res = await pgApi('sync', {
+            syncTransactions: Boolean(pgForm.elements.syncTransactions?.checked),
+            days: Number(pgForm.elements.txDays?.value) || 90,
+          });
+          if (window.FinancasCloud && window.FinancasCloud.pullFromCloud) {
+            await window.FinancasCloud.pullFromCloud();
+          }
           await loadPluggy();
-          statusLine.textContent='Seleção do patrimônio atualizada.';
-        } catch(e) {el.checked=!el.checked;el.disabled=false;statusLine.textContent=e.message;}
+          const s = res.summary;
+          statusLine.textContent = s
+            ? `Sincronizado: ${s.newBankTx} nova(s) movimentação(ões) em conta · ${s.newCardPurchases} nova(s) compra(s) no cartão (${s.skippedBankTx + s.skippedCardPurchases} já existentes ignoradas).`
+            : 'Dados atualizados.';
+        } catch (e) {
+          statusLine.textContent = e.message;
+        } finally {
+          event.target.disabled = !integration?.ready;
+        }
       };
+
+      // Handle Pluggy activate/ignore and manual-record linking across Accounts, Cards and Investments.
+      document.getElementById('view-imports').addEventListener('change', async (event) => {
+        const cashToggle = event.target.closest('[data-cash-account]');
+        if (cashToggle) {
+          const id = cashToggle.dataset.cashAccount;
+          const origin = cashToggle.dataset.cashOrigin;
+          const pluggyId = cashToggle.dataset.cashPluggy;
+          if (origin === 'Pluggy' && pluggyId) {
+            cashToggle.disabled = true;
+            try {
+              await pgApi('inclusion', { id: pluggyId, included: cashToggle.checked });
+              await loadPluggy();
+              showToast('Dinheiro disponível atualizado.');
+            } catch (e) {
+              cashToggle.checked = !cashToggle.checked;
+              statusLine.textContent = e.message;
+            } finally {
+              cashToggle.disabled = false;
+            }
+          } else {
+            const acc = state.accounts.find((a) => a.id === id);
+            if (acc) {
+              acc.includeInCash = cashToggle.checked;
+              saveState();
+              renderAll();
+              showToast('Dinheiro disponível atualizado.');
+            }
+          }
+          return;
+        }
+
+        const posToggle = event.target.closest('[data-position]');
+        if (posToggle) {
+          posToggle.disabled = true;
+          try {
+            await pgApi('inclusion', { id: posToggle.dataset.position, included: posToggle.checked });
+            if (window.FinancasCloud && window.FinancasCloud.pullFromCloud) {
+              await window.FinancasCloud.pullFromCloud();
+            }
+            await loadPluggy();
+            statusLine.textContent = posToggle.checked ? 'Item ativado nos cálculos.' : 'Item ignorado nos cálculos.';
+            showToast(statusLine.textContent);
+          } catch (e) {
+            posToggle.checked = !posToggle.checked;
+            statusLine.textContent = e.message;
+          } finally {
+            posToggle.disabled = false;
+          }
+          return;
+        }
+
+        const linkSel = event.target.closest('[data-pg-link]');
+        if (linkSel) {
+          const pluggyId = linkSel.dataset.pgLink;
+          const targetId = linkSel.value || null;
+          linkSel.disabled = true;
+          try {
+            // Ensure current local manual accounts/cards are saved in D1 before linking.
+            if (window.FinancasCloud && window.FinancasCloud.flushSave) {
+              await window.FinancasCloud.flushSave(state);
+            }
+            const res = await pgApi('link', { pluggyId, targetId });
+            if (window.FinancasCloud && window.FinancasCloud.pullFromCloud) {
+              await window.FinancasCloud.pullFromCloud();
+            }
+            await loadPluggy();
+            statusLine.textContent = targetId
+              ? `Item vinculado sem duplicação${res.migratedCount ? ` (${res.migratedCount} lançamento(s) unificado(s))` : ''}.`
+              : 'Vínculo removido. Item voltou a aparecer separadamente.';
+            showToast(statusLine.textContent);
+          } catch (e) {
+            statusLine.textContent = e.message;
+            await loadPluggy().catch(() => {});
+          } finally {
+            linkSel.disabled = false;
+          }
+        }
+      });
 
       const review = document.getElementById('statement-dialog');
       const pdfInput = document.getElementById('statement-file');
       const readButton = document.getElementById('read-statement');
       const pdfStatus = document.getElementById('pdf-status');
       let draft;
-      readButton.onclick = () => { if (!allCards().length || !state.people.length) { setView('settings'); showToast('Cadastre o cartão e o titular para importar a fatura.'); return; } pdfInput.value = ''; pdfInput.click(); };
+      readButton.onclick = () => {
+        if (!allCards().length || !state.people.length) {
+          setView('settings');
+          showToast('Cadastre o cartão e o titular para importar a fatura.');
+          return;
+        }
+        pdfInput.value = '';
+        pdfInput.click();
+      };
       document.getElementById('review-cancel').onclick = () => review.close();
+
       pdfInput.onchange = async () => {
         const file = pdfInput.files[0];
         if (!file) return;
         const cardId = selectedCardId;
         const month = getMonth();
         readButton.disabled = true;
-        pdfStatus.textContent = 'Lendo as páginas do PDF…';
+        pdfStatus.textContent = file.name.toLowerCase().endsWith('.csv') ? 'Lendo fatura CSV…' : 'Lendo as páginas do PDF…';
         try {
-          const {rows, skipped} = await StatementReader.read(file, month);
+          const { rows, skipped } = await StatementReader.read(file, month);
           if (!rows.length) {
-            pdfStatus.textContent = 'Nenhuma compra reconhecida. Use um PDF com texto selecionável ou cadastre a compra manualmente.';
+            pdfStatus.textContent = 'Nenhuma compra reconhecida. Use um PDF selecionável ou CSV com data, descrição e valor.';
             return;
           }
-          const existing = getMonthInstallments(month, true).filter(r => r.cardId === cardId);
-          const used = new Set();
-          draft = {cardId, month, rows: rows.map(row => {
-            const name = StatementReader.normalize(row.description);
-            const candidates = existing.filter(r => r.installmentNumber === row.index && r.installmentsTotal === row.count &&
-              (StatementReader.normalize(r.description) === name || Math.abs(r.fullCents - row.cents) <= 1 || r.date === row.date));
-            const sameName = candidates.filter(r => StatementReader.normalize(r.description) === name &&
-              (row.count > 1 || r.date === row.date) && !used.has(r.purchaseId));
-            const near = sameName.filter(r => Math.abs(r.fullCents - row.cents) <= 1);
-            const exactDate = near.filter(r => r.date === row.date);
-            const matches = exactDate.length ? exactDate : near;
-            const best = matches.length === 1 ? matches[0] : null;
-            if (best) used.add(best.purchaseId);
-            return {...row, candidates, target: best?.purchaseId || (sameName.length ? '?' : 'new')};
-          })};
-          document.getElementById('review-context').textContent = getCard(cardId).name + ' · ' + monthLabel(month) + ' · ' + file.name;
-          document.getElementById('review-summary').textContent = rows.length + ' compra(s) para conferir. Compare com o PDF antes de confirmar.' + (skipped ? ' Linhas com data não importadas: ' + skipped + '.' : '');
+          const existing = getMonthInstallments(month, true).filter((r) => r.cardId === cardId);
+          const reconciled = StatementReader.reconcileIncremental(existing, cardId, month, rows);
+          draft = {
+            cardId,
+            month,
+            fileName: file.name,
+            skippedLines: skipped,
+            newItems: reconciled.newItems,
+            duplicateItems: reconciled.duplicateItems,
+          };
+
+          const owner = getOwnerId();
+          document.getElementById('review-context').textContent = `${getCard(cardId).name} · ${monthLabel(month)} · ${file.name}`;
+          document.getElementById('review-summary').textContent =
+            `${draft.newItems.length} nova(s) compra(s) para adicionar · ${draft.duplicateItems.length} compra(s) já existente(s) ignorada(s)` +
+            (skipped ? ` · ${skipped} linha(s) não reconhecida(s)` : '');
           document.getElementById('review-error').textContent = '';
-          const owner = state.people.find(p => p.isOwner)?.id;
-          document.getElementById('review-rows').innerHTML = draft.rows.map((r, i) => `
-            <div class="review-row" data-index="${i}">
-              <label><input type="checkbox" data-include checked> ${esc(r.description)} · ${fmtCents(r.cents)}</label>
-              <small>${fmtDate(r.date)} · ${r.count === 1 ? 'À vista' : 'Parcela ' + r.index + '/' + r.count}</small>
-              <label>Lançamento<select class="bill-field" data-target>
-                ${r.target === '?' ? '<option value="?">Conferir vínculo com compra existente</option>' : ''}
-                <option value="new" ${r.target === 'new' ? 'selected' : ''}>Nova compra</option>
-                ${r.candidates.map(c => `<option value="${esc(c.purchaseId)}" ${r.target === c.purchaseId ? 'selected' : ''}>${c.confirmed ? 'Já conferida' : 'Conciliar'} · ${esc(c.description)} · ${fmtCents(c.fullCents)} · ${c.splits.map(s => esc(getPerson(s.personId).name)).join(', ')}</option>`).join('')}
-              </select></label>
-              <label>Responsável<select class="bill-field" data-person><option value="" ${r.target !== 'new' ? 'selected' : ''}>Manter rateio da compra</option>${personOptions(r.target === 'new' ? owner : null)}</select></label>
-            </div>`).join('');
-          pdfStatus.textContent = '';
+
+          const saveBtn = document.getElementById('review-save');
+          if (!draft.newItems.length) {
+            document.getElementById('review-rows').innerHTML =
+              '<p class="py-3 text-sm text-zinc-500">Todas as compras desta fatura já foram importadas anteriormente. Seus rateios, responsáveis e categorias permanecerão intactos.</p>';
+            saveBtn.hidden = true;
+          } else {
+            saveBtn.hidden = false;
+            document.getElementById('review-rows').innerHTML = draft.newItems.map((r, i) => `
+              <div class="review-row" data-index="${i}">
+                <label><input type="checkbox" data-include checked> ${esc(r.description)} · ${fmtCents(r.cents)}</label>
+                <small>${fmtDate(r.date)} · ${r.count === 1 ? 'À vista' : 'Parcela ' + r.index + '/' + r.count}${r.occurrenceIndex > 1 ? ' · Ocorrência #' + r.occurrenceIndex : ''}</small>
+                <div class="review-row-meta">
+                  <label>Categoria
+                    <select class="bill-field" data-category>
+                      ${CATEGORIES.map((cat) => `<option value="${esc(cat)}" ${cat === (r.category || 'Compras') ? 'selected' : ''}>${esc(cat)}</option>`).join('')}
+                    </select>
+                  </label>
+                  <label>Responsável
+                    <select class="bill-field" data-person>
+                      ${personOptions(owner)}
+                    </select>
+                  </label>
+                </div>
+              </div>`).join('');
+          }
+
+          const ignWrap = document.getElementById('review-ignored-wrap');
+          const ignTitle = document.getElementById('review-ignored-title');
+          const ignList = document.getElementById('review-ignored-list');
+          if (draft.duplicateItems.length) {
+            ignWrap.hidden = false;
+            ignTitle.textContent = `${draft.duplicateItems.length} compra(s) já existente(s) — serão ignoradas (rateios e categorias preservados)`;
+            ignList.innerHTML = draft.duplicateItems.map((d) => `
+              <div class="flex items-center justify-between gap-2 py-1 border-b hairline text-xs">
+                <span class="truncate">${fmtDate(d.date)} · ${esc(d.description)}${d.count > 1 ? ` (${d.index}/${d.count})` : ''}</span>
+                <span class="tabular-nums font-semibold shrink-0">${fmtCents(d.cents)}</span>
+              </div>
+            `).join('');
+          } else {
+            ignWrap.hidden = true;
+            ignList.innerHTML = '';
+          }
+
+          pdfStatus.textContent = draft.newItems.length
+            ? ''
+            : `0 novas compras adicionadas · ${draft.duplicateItems.length} compras já existentes ignoradas`;
           review.showModal();
         } catch (error) {
-          pdfStatus.textContent = 'Não foi possível ler o PDF. Confira o arquivo e a senha, se houver, e tente novamente.';
-        } finally { readButton.disabled = false; }
-      };
-      review.onchange = event => {
-        if (event.target.matches('[data-target]')) {
-          event.target.closest('.review-row').querySelector('[data-person]').value =
-            event.target.value === 'new' ? state.people.find(p => p.isOwner)?.id || '' : '';
+          pdfStatus.textContent = 'Não foi possível ler a fatura. Confira o arquivo PDF/CSV (e senha, se houver) e tente novamente.';
+        } finally {
+          readButton.disabled = false;
         }
       };
-      document.getElementById('review-save').onclick = () => {
+
+      document.getElementById('review-save').onclick = async () => {
         if (!draft) return;
         const error = document.getElementById('review-error');
-        const selected = [...review.querySelectorAll('.review-row')].filter(el => el.querySelector('[data-include]').checked);
-        if (!selected.length) { error.textContent = 'Selecione pelo menos uma compra.'; return; }
-        const updated = new Map();
-        for (const el of selected) {
-          const row = draft.rows[Number(el.dataset.index)];
-          const target = el.querySelector('[data-target]').value;
-          const person = el.querySelector('[data-person]').value;
-          if (target === '?' || (target === 'new' && !person) || (person && !state.people.some(p => p.id === person))) {
-            error.textContent = 'Confira o lançamento e o responsável de ' + row.description + '.'; return;
-          }
-          if (updated.has(target)) { error.textContent = 'Duas linhas apontam para a mesma compra. Confira os vínculos.'; return; }
-          let cp;
-          if (target === 'new') {
-            cp = {id: 'pdf_' + crypto.randomUUID(), cardId: draft.cardId, date: row.date, startMonth: addMonths(draft.month, 1 - row.index),
-              category: 'Compras', description: row.description, totalCents: row.cents * row.count, installments: row.count};
-          } else {
-            const prev = state.cardPurchases.find(p => p.id === target && p.cardId === draft.cardId);
-            if (!prev) { error.textContent = 'A compra vinculada mudou. Reabra o PDF para conferir.'; return; }
-            cp = {...prev};
-          }
-          if (person) cp.splits = [{personId: person, cents: cp.totalCents}];
-          cp.statementAmounts = {...cp.statementAmounts, [draft.month]: row.cents};
-          updated.set(cp.id, cp);
+        const selectedEls = [...review.querySelectorAll('.review-row')].filter((el) => el.querySelector('[data-include]').checked);
+        if (!selectedEls.length) {
+          error.textContent = 'Selecione pelo menos uma nova compra para adicionar.';
+          return;
         }
-        const originals = new Set(state.cardPurchases.map(p => p.id));
-        state.cardPurchases = [...updated.values()].filter(p => !originals.has(p.id)).concat(state.cardPurchases.map(p => updated.get(p.id) || p));
-        selectedCardId = draft.cardId;
-        saveState();
-        review.close();
-        goToMonth(draft.month);
-        draft = null;
-        pdfStatus.textContent = selected.length + ' lançamento(s) conferido(s).';
+
+        const itemsToAdd = [];
+        for (const el of selectedEls) {
+          const row = draft.newItems[Number(el.dataset.index)];
+          const personId = el.querySelector('[data-person]').value;
+          const category = el.querySelector('[data-category]').value || 'Compras';
+          if (!personId || !state.people.some((p) => p.id === personId)) {
+            error.textContent = 'Selecione o responsável para ' + row.description + '.';
+            return;
+          }
+          itemsToAdd.push({
+            ...row,
+            category,
+            personId,
+          });
+        }
+
+        const ignoredBefore = draft.duplicateItems.length;
+        const saveBtn = document.getElementById('review-save');
+        saveBtn.disabled = true;
+
+        try {
+          let addedCount = 0;
+          let ignoredCount = ignoredBefore;
+
+          // Persist incrementally directly in D1 when connected so existing purchases/splits are never touched.
+          if (window.FinancasCloud && window.FinancasCloud.isD1Enabled && window.FinancasCloud.isD1Enabled()) {
+            if (window.FinancasCloud.flushSave) {
+              await window.FinancasCloud.flushSave(state);
+            }
+            const res = await fetch('/api/cards/import-statement', {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({
+                cardId: draft.cardId,
+                month: draft.month,
+                items: itemsToAdd.map((r) => ({
+                  date: r.date,
+                  description: r.description,
+                  cents: r.cents,
+                  index: r.index,
+                  count: r.count,
+                  category: r.category,
+                  personId: r.personId,
+                })),
+                defaultPersonId: getOwnerId(),
+              }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Falha ao salvar importação.');
+            addedCount = Number(data.added) || 0;
+            ignoredCount = ignoredBefore + (Number(data.ignored) || 0);
+            if (Array.isArray(data.addedPurchases) && data.addedPurchases.length) {
+              state.cardPurchases = [...data.addedPurchases, ...state.cardPurchases];
+              try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+            }
+          } else {
+            // Local/offline mode: add only new purchases, preserving existing purchases intact.
+            const newPurchases = itemsToAdd.map((row) => {
+              const totalCents = row.cents * row.count;
+              return {
+                id: 'stmt_' + crypto.randomUUID(),
+                cardId: draft.cardId,
+                date: row.date,
+                startMonth: addMonths(draft.month, 1 - row.index),
+                description: row.description,
+                category: row.category,
+                totalCents,
+                installments: row.count,
+                splits: [{ personId: row.personId, cents: totalCents }],
+                statementAmounts: { [draft.month]: row.cents },
+                source: 'statement',
+                externalId: null,
+                importKey: row.importKey,
+              };
+            });
+            addedCount = newPurchases.length;
+            state.cardPurchases = [...newPurchases, ...state.cardPurchases];
+            saveState();
+          }
+
+          selectedCardId = draft.cardId;
+          const targetMonth = draft.month;
+          review.close();
+          draft = null;
+          goToMonth(targetMonth);
+          const summaryMsg = `${addedCount} novas compras adicionadas · ${ignoredCount} compras já existentes ignoradas`;
+          pdfStatus.textContent = summaryMsg;
+          showToast(summaryMsg);
+        } catch (err) {
+          error.textContent = err instanceof Error ? err.message : 'Erro ao confirmar importação.';
+        } finally {
+          saveBtn.disabled = false;
+        }
       };
 
       const desktopNav = document.querySelector('.desktop-navigation');
       const rail = document.getElementById('icon-rail');
       const hideDrawer = () => desktopNav.classList.remove('drawer-open');
-      rail.addEventListener('pointerover', event => {
+      rail.addEventListener('pointerover', (event) => {
         if (event.pointerType === 'mouse' && event.target.closest('button')) desktopNav.classList.add('drawer-open');
       });
       desktopNav.addEventListener('pointerleave', hideDrawer);
-      desktopNav.addEventListener('focusin', event => {
+      desktopNav.addEventListener('focusin', (event) => {
         if (event.target.matches(':focus-visible')) desktopNav.classList.add('drawer-open');
       });
-      desktopNav.addEventListener('focusout', event => {
+      desktopNav.addEventListener('focusout', (event) => {
         if (!desktopNav.contains(event.relatedTarget)) hideDrawer();
       });
-      desktopNav.addEventListener('keydown', event => {
+      desktopNav.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
           rail.querySelector('[aria-current="page"]')?.focus();
           hideDrawer();
         }
       });
       // On touch screens the brand button toggles the full menu.
-      rail.querySelector('button').addEventListener('click', event => {
+      rail.querySelector('button').addEventListener('click', (event) => {
         if (matchMedia('(hover: none)').matches) {
           event.stopPropagation();
           desktopNav.classList.toggle('drawer-open');
         }
       });
-      document.addEventListener('pointerdown', event => {
+      document.addEventListener('pointerdown', (event) => {
         if (!desktopNav.contains(event.target)) hideDrawer();
       });
 
@@ -2046,19 +2737,24 @@
         const card = manual.elements.kind.value === 'card';
         document.getElementById('manual-balance').hidden = card;
         document.getElementById('manual-card').hidden = !card;
-        for (const field of ['last4','closing','due']) manual.elements[field].required = card;
+        for (const field of ['last4', 'closing', 'due']) manual.elements[field].required = card;
       };
-      manual.onsubmit = event => {
+      manual.onsubmit = (event) => {
         event.preventDefault();
-        const data = new FormData(manual), name = String(data.get('name')).trim(), id=crypto.randomUUID();
+        const data = new FormData(manual), name = String(data.get('name')).trim(), id = crypto.randomUUID();
         if (!name) return;
         if (data.get('kind') === 'card') {
-          state.cards.push({id,name,institution:'Manual',last4:data.get('last4'),limit:0,closeDay:Number(data.get('closing')),dueDay:Number(data.get('due'))});
+          state.cards.push({ id, name, institution: 'Manual', last4: data.get('last4'), limit: 0, closeDay: Number(data.get('closing')), dueDay: Number(data.get('due')) });
           selectedCardId = id;
-        } else state.accounts.push({id,name,balance:Number(data.get('balance')),color:'#2563eb'});
-        manual.reset(); manual.elements.kind.onchange();
-        saveState(); populateSelects(); renderAll(); showToast('Cadastro salvo.');
+        } else state.accounts.push({ id, name, balance: Number(data.get('balance')), color: '#2563eb', includeInCash: true });
+        manual.reset();
+        manual.elements.kind.onchange();
+        saveState();
+        populateSelects();
+        renderAll();
+        showToast('Cadastro salvo.');
       };
+
       // Event bindings
       document.addEventListener('click', (e) => {
         const viewBtn = e.target.closest('[data-view]');
@@ -2072,6 +2768,9 @@
 
         const openPerson = e.target.closest('[data-open-person]');
         if (openPerson) { selectedPersonId = openPerson.dataset.openPerson; setView('cards'); return; }
+
+        const editP = e.target.closest('[data-edit-purchase]');
+        if (editP) { openPurchaseModal(editP.dataset.editPurchase); return; }
 
         const delP = e.target.closest('[data-del-purchase]');
         if (delP) {
@@ -2149,8 +2848,8 @@
       document.getElementById('global-month-filter').addEventListener('change', renderAll);
       function goToMonth(month) {
         const select = document.getElementById('global-month-filter');
-        if (!Array.from(select.options).some(option => option.value === month)) {
-          const next = Array.from(select.options).find(option => option.value > month);
+        if (!Array.from(select.options).some((option) => option.value === month)) {
+          const next = Array.from(select.options).find((option) => option.value > month);
           select.add(new Option(monthLabel(month), month), next || null);
         }
         select.value = month;
@@ -2163,10 +2862,10 @@
         renderDashboard();
       });
 
-      document.getElementById('btn-open-purchase').addEventListener('click', openPurchaseModal);
-      document.getElementById('side-btn-new-purchase').addEventListener('click', openPurchaseModal);
-      document.getElementById('cards-btn-new').addEventListener('click', openPurchaseModal);
-      document.getElementById('btn-add-split-row').addEventListener('click', () => addSplitRow(state.people.find(p => !p.isOwner)?.id || state.people[0]?.id, ''));
+      document.getElementById('btn-open-purchase').addEventListener('click', () => openPurchaseModal());
+      document.getElementById('side-btn-new-purchase').addEventListener('click', () => openPurchaseModal());
+      document.getElementById('cards-btn-new').addEventListener('click', () => openPurchaseModal());
+      document.getElementById('btn-add-split-row').addEventListener('click', () => addSplitRow(state.people.find((p) => !p.isOwner)?.id || state.people[0]?.id, ''));
 
       document.getElementById('btn-open-settle').addEventListener('click', () => { populateSelects(); openModal('modal-settle'); });
       document.getElementById('cards-btn-settle').addEventListener('click', () => { populateSelects(); openModal('modal-settle'); });
@@ -2214,9 +2913,31 @@
         });
         if (!splits.length && rows.length === 1) splits.push({ personId: rows[0].querySelector('.split-person').value, cents: totalCents });
         if (splits.reduce((total, part) => total + part.cents, 0) !== totalCents) {
-          showToast('Os valores do rateio precisam somar o total da compra.'); return;
+          showToast('Os valores do rateio precisam somar o total da compra.');
+          return;
         }
+        const editId = document.getElementById('cp-edit-id').value;
         const dateVal = document.getElementById('cp-date').value || `${getMonth()}-21`;
+        const installments = Math.max(1, Number(document.getElementById('cp-inst').value) || 1);
+
+        if (editId) {
+          const existing = state.cardPurchases.find((p) => p.id === editId);
+          if (existing) {
+            existing.cardId = document.getElementById('cp-card').value;
+            existing.date = dateVal;
+            existing.description = document.getElementById('cp-desc').value.trim();
+            existing.category = document.getElementById('cp-cat').value;
+            existing.totalCents = totalCents;
+            existing.installments = installments;
+            existing.splits = splits;
+            saveState();
+            closeModal('modal-purchase');
+            renderAll();
+            showToast('Compra e rateio atualizados.');
+            return;
+          }
+        }
+
         state.cardPurchases.unshift({
           id: `cp_${Date.now()}`,
           cardId: document.getElementById('cp-card').value,
@@ -2225,10 +2946,14 @@
           description: document.getElementById('cp-desc').value.trim(),
           category: document.getElementById('cp-cat').value,
           totalCents,
-          installments: Math.max(1, Number(document.getElementById('cp-inst').value) || 1),
+          installments,
           splits,
+          source: 'manual',
         });
-        saveState(); closeModal('modal-purchase'); renderAll(); showToast('Compra registrada.');
+        saveState();
+        closeModal('modal-purchase');
+        renderAll();
+        showToast('Compra registrada.');
       });
 
       document.getElementById('form-settle').addEventListener('submit', (e) => {

@@ -64,3 +64,26 @@ html.dark { --accent: #a7c6ff; --selected: #233451; }
 .pg-invest b { margin-left:auto; }
 #manual-add label { display:inline-flex; align-items:center; gap:5px; flex-wrap:wrap; font-size:14px; margin:4px; }
 #manual-add [hidden] { display:none; }
+.origin-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; line-height:1.35; white-space:nowrap; }
+.origin-manual { background:#f3f4f6; color:#374151; }
+html.dark .origin-manual { background:#232736; color:#d1d5db; }
+.origin-pluggy { background:#dbeafe; color:#1d4ed8; }
+html.dark .origin-pluggy { background:rgba(59,130,246,0.18); color:#93c5fd; }
+.origin-vinculado { background:#d1fae5; color:#047857; }
+html.dark .origin-vinculado { background:rgba(16,185,129,0.18); color:#6ee7b7; }
+.origin-ignored { background:#fef3c7; color:#92400e; }
+html.dark .origin-ignored { background:rgba(245,158,11,0.16); color:#fcd34d; }
+.pg-org-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px 12px; align-items:center; padding:12px 0; border-bottom:1px solid var(--border-hairline); }
+.pg-org-row:last-child { border-bottom:none; }
+.pg-org-row.is-ignored { opacity:0.6; }
+.pg-org-controls { display:flex; flex-wrap:wrap; align-items:center; gap:8px; grid-column:1/-1; }
+.pg-org-controls select { min-height:36px; padding:4px 10px; font-size:12px; }
+.review-banner { padding:10px 12px; border-radius:12px; background:var(--selected); color:var(--accent); font-weight:600; font-size:13px; margin:8px 0; }
+.review-ignored-box { margin-top:12px; padding-top:10px; border-top:1px solid var(--border-hairline); font-size:13px; color:var(--text-secondary); }
+.review-ignored-box summary { cursor:pointer; font-weight:600; }
+.review-row-meta { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.bill-actions-bar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; grid-column:1/-1; font-size:12px; color:var(--text-secondary); }
+.bill-actions-bar select { min-height:34px; padding:4px 8px; font-size:12px; }
+.bill-mini-btn { padding:5px 10px; border-radius:8px; border:1px solid var(--border-hairline); background:var(--bg-subtle); color:var(--text-primary); font-size:12px; font-weight:600; cursor:pointer; }
+.bill-mini-btn:hover { border-color:var(--accent); }
+
